@@ -1,4 +1,3 @@
-#! /usr/bin/Rscript
 suppressMessages(library(Biostrings))
 suppressMessages(library(optparse))
 suppressMessages(library(reshape2))
