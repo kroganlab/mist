@@ -18,9 +18,14 @@ getConfig <- function(config_file){
 }
 
 main <- function(parsedArgs){
-  # load config file
-  config = tryCatch(getConfig(parsedArgs$config_file), error = function(e) { print("!!! Error in loading the config file. Please make sure the file follows YAML format."); break} )
-  preprocess.main(data_file=config$files$data, keys_file=config$files$keys, output_file=config$files$output_dir, filter_data=config$general$filter_contaminants, rm_co=config$general$remove_carryover, nupsc_flag=config$general$spectral_counts, collapse_file=config$files$collapse, exclusions_file=config$files$exclusions, remove_file=config$files$remove)
+  ## load config file
+  config = tryCatch(getConfig(parsedArgs$config_file), error = function(e) { print("!!! Error loading the config file. Please make sure the file follows YAML format."); break} )
+  
+  ## main switches between parts of the pipeline
+  if(config$preprocess$enabled){
+    print(">> PREPROCESSING FILES")
+    preprocess.main(data_file=config$files$data, keys_file=config$files$keys, output_file=config$files$output_dir, filter_data=config$general$filter_contaminants, rm_co=config$general$remove_carryover, nupsc_flag=config$general$spectral_counts, collapse_file=config$files$collapse, exclusions_file=config$files$specifity_exclusions, remove_file=config$files$remove)
+  }
 }
 
 option_list <- list(
