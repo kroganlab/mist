@@ -3,7 +3,7 @@ suppressMessages(library(optparse))
 suppressMessages(library(reshape2))
 
 # filter out contaminants
-filterContaminants = function(contaminant_fasta, df) {
+preprocess.filterContaminants = function(contaminant_fasta, df) {
 	## use biostrings function to read in fasta file
 	fastaF = as.data.frame(readAAStringSet(filepath = contaminant_fasta))
 	cont_df = data.frame(name = rownames(fastaF), seq = fastaF$x)
@@ -17,9 +17,8 @@ filterContaminants = function(contaminant_fasta, df) {
 	df_F
 }
 
-
 # merge data with keys
-mergeData <- function(dat, keys){
+preprocess.mergeData <- function(dat, keys){
   ids = union(unique(dat[,1]), unique(keys[,1]) )
   print(paste("  ", length(ids), " TOTAL BAITS DETECTED", sep=""))
   print(paste("  ", length(unique(dat[,1])), "/", length(ids), " BAITS DETECTED IN DATA FILE", sep=""))
@@ -38,9 +37,8 @@ mergeData <- function(dat, keys){
 	return(x)
 }
 
-
 # remove duplicate prey entries per IP. Rare, but happens
-removeDuplicates = function(y){
+preprocess.removeDuplicates = function(y){
   #find duplicate prey entries per IP
   idx <- duplicated(y[,c('id','ms_uniprot_ac')])
   if(sum(idx)>0){
@@ -50,9 +48,8 @@ removeDuplicates = function(y){
   return(y)
 }
 
-
 # order the data based on it's id
-orderExperiments <- function(y){
+preprocess.orderExperiments <- function(y){
 	idnum <- sub("(^[A-Za-z]+|^[A-Za-z]+-)","",y$id)	#strip out numbers
 	idname <- sub("([0-9].*|-[0-9].*)","",y$id)			#strip out id characters
 	tmp = strsplit(idnum,"-")
@@ -64,7 +61,7 @@ orderExperiments <- function(y){
 }
 
 # Find potential carryover and print to a file. To be used/appended to final score consolidation sheet
-findCarryover <- function(x){
+preprocess.findCarryover <- function(x){
 	# order experiments
 	x <- x[orderExperiments(x),]
 	experiments <- unique(x$id)
@@ -96,9 +93,8 @@ findCarryover <- function(x){
 	
 }
 
-
 # create the data matrix that will be used as input by MiST and Saint algorithms
-createMatrix <- function(y, nupsc_flag, collapse_file, exclusions_file, remove_file){
+preprocess.createMatrix <- function(y, nupsc_flag, collapse_file, exclusions_file, remove_file){
 
   # collapse bait names from "collapse" file
   if(file.info(collapse_file)$size >0){
@@ -169,10 +165,8 @@ createMatrix <- function(y, nupsc_flag, collapse_file, exclusions_file, remove_f
   #############################################################################################################################################
 }
 
-
-
 # wrapper to filter data and merge with keys
-main <- function(data_file, keys_file, output_file, filter_data, rm_co, nupsc_flag, collapse_file, exclusions_file, remove_file){
+preprocess.main <- function(data_file, keys_file, output_file, filter_data, rm_co, nupsc_flag, collapse_file, exclusions_file, remove_file){
   print("Reading Files")
   out_file <- unlist(strsplit(output_file,"\\."))[1]		#get ouput_dir from output_file
 	#out_dir <- paste(out_dir[-length(out_dir)],collapse="/")
@@ -184,24 +178,24 @@ main <- function(data_file, keys_file, output_file, filter_data, rm_co, nupsc_fl
   print("Removing decoys and prey with 0 unique peptides")
   df <- df[-grep("decoy",df[,4]),]               # remove "decoys"
 	df <- df[which(df[,3] > 0 | is.na(df[,3])),]   # remove ms_unique_pep <= 0
-  df <- removeDuplicates(df)
+  df <- preprocess.removeDuplicates(df)
   
 	#filter contaminants out
   print("FILTERING COMMON CONTAMINANTS")
 	if(filter_data == 1)
-		df <- filterContaminants("~/HPC/MSPipeline/files/contaminants.fasta",df)
+		df <- preprocess.filterContaminants("~/HPC/MSPipeline/files/contaminants.fasta",df)
 	
 	#merge keys with data
 	print("MERGING KEYS WITH DATA")
-	df <- mergeData(df, keys)
-	df <- df[orderExperiments(df),]  #GENERATES WARNINGS WHEN ID# HAS CHARACTERS IN IT: FIXED
+	df <- preprocess.mergeData(df, keys)
+	df <- df[preprocess.orderExperiments(df),]  #GENERATES WARNINGS WHEN ID# HAS CHARACTERS IN IT: FIXED
   outfile = paste(out_file, ".txt", sep="")
 	write.table(df, outfile, eol="\n", sep="\t", quote=F, row.names=F, col.names=T, na="")
 
   # create matrix to be used by MiST and Saint
 	print("CONVERTING TO MATRIX")
   outfile = paste(out_file, "_MAT.txt", sep="")
-  df <- createMatrix(df, nupsc_flag, collapse_file, exclusions_file, remove_file) #return a list b/c of space padding
+  df <- preprocess.createMatrix(df, nupsc_flag, collapse_file, exclusions_file, remove_file) #return a list b/c of space padding
 	write.table(df[[1]], outfile, eol="\n", sep="\t", quote=F, row.names=F, col.names=F, na="")
   write.table(df[[2]], outfile, eol="\n", sep="\t", quote=F, row.names=F, col.names=F, na="", append=TRUE)
   
@@ -215,40 +209,40 @@ main <- function(data_file, keys_file, output_file, filter_data, rm_co, nupsc_fl
   	
 }
 
-
-option_list <- list(
-  make_option(c("-d", "--data_file"),
-              help="data file containing values"), 
-  make_option(c("-k", "--keys_file"),
-              help="keys file containing bait names"), 
-  make_option(c("-o", "--output_file"),
-              help="output file"), 
-  make_option(c("-a", "--collapse_file"),
-              help="collapse file"),
-  make_option(c("-b", "--exclusions_file"),
-              help="exclusions file"),
-  make_option(c("-e", "--remove_file"),
-              help="remove file"),
-  make_option(c("-g", "--filter_data"),
-              help="filter out common contaminants first"),
-  make_option(c("-r", "--remove_carryover"),
-              help="prints potential carryover to file"),
-  make_option(c("-s", "--nupsc_flag"),
-              help="use number of unique peptides or spectral count as matrix values")  
-)
-parsedArgs = parse_args(OptionParser(option_list = option_list), args = commandArgs(trailingOnly=T))
-
-#data_file = "~/HPC/MSPipeline/tests/Benchmark/kinases/data/input/kinases_data.txt"
-#keys_file = "~/HPC/MSPipeline/tests/Benchmark/kinases/data/input/kinases_keys.txt"
-#collapse_file = "~/HPC/MSPipeline/tests/Benchmark/kinases/data/input/kinases_collapse.txt"
-#exclusions_file = "~/HPC/MSPipeline/tests/Benchmark/kinases/data/input/kinases_exclusions.txt"
-#remove_file = "~/HPC/MSPipeline/tests/Benchmark/kinases/data/input/kinases_remove.txt"
-#output_file = "~/Desktop/test_matrix.txt"
-#nupsc_flag = 1
-#remove_carryover=0
-#filter_data=1
-#main(data_file, keys_file, output_file, filter_data, remove_carryover, nupsc_flag, collapse_file, exclusions_file, remove_file)
-
-
-
-main(parsedArgs$data_file, parsedArgs$keys_file, parsedArgs$output_file, parsedArgs$filter_data, parsedArgs$remove_carryover, parsedArgs$nupsc_flag, parsedArgs$collapse_file, parsedArgs$exclusions_file, parsedArgs$remove_file)
+if(is.null(PIPELINE)){
+  
+  option_list <- list(
+    make_option(c("-d", "--data_file"),
+                help="data file containing values"), 
+    make_option(c("-k", "--keys_file"),
+                help="keys file containing bait names"), 
+    make_option(c("-o", "--output_file"),
+                help="output file"), 
+    make_option(c("-a", "--collapse_file"),
+                help="collapse file"),
+    make_option(c("-b", "--exclusions_file"),
+                help="exclusions file"),
+    make_option(c("-e", "--remove_file"),
+                help="remove file"),
+    make_option(c("-g", "--filter_data"),
+                help="filter out common contaminants first"),
+    make_option(c("-r", "--remove_carryover"),
+                help="prints potential carryover to file"),
+    make_option(c("-s", "--nupsc_flag"),
+                help="use number of unique peptides or spectral count as matrix values")  
+  )
+  parsedArgs = parse_args(OptionParser(option_list = option_list), args = commandArgs(trailingOnly=T))
+  
+  #data_file = "~/HPC/MSPipeline/tests/Benchmark/kinases/data/input/kinases_data.txt"
+  #keys_file = "~/HPC/MSPipeline/tests/Benchmark/kinases/data/input/kinases_keys.txt"
+  #collapse_file = "~/HPC/MSPipeline/tests/Benchmark/kinases/data/input/kinases_collapse.txt"
+  #exclusions_file = "~/HPC/MSPipeline/tests/Benchmark/kinases/data/input/kinases_exclusions.txt"
+  #remove_file = "~/HPC/MSPipeline/tests/Benchmark/kinases/data/input/kinases_remove.txt"
+  #output_file = "~/Desktop/test_matrix.txt"
+  #nupsc_flag = 1
+  #remove_carryover=0
+  #filter_data=1
+  #main(data_file, keys_file, output_file, filter_data, remove_carryover, nupsc_flag, collapse_file, exclusions_file, remove_file)
+  
+#   main(parsedArgs$data_file, parsedArgs$keys_file, parsedArgs$output_file, parsedArgs$filter_data, parsedArgs$remove_carryover, parsedArgs$nupsc_flag, parsedArgs$collapse_file, parsedArgs$exclusions_file, parsedArgs$remove_file)
+}

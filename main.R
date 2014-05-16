@@ -1,5 +1,11 @@
 #! /usr/bin/Rscript --vanilla
 suppressMessages(library(yaml))
+suppressMessages(library(optparse))
+
+PIPELINE=T
+
+## load all externeal files
+source("src/preprocess_data.R")
 
 getConfig <- function(config_file){
   x = readLines(config_file)
@@ -11,10 +17,10 @@ getConfig <- function(config_file){
   return(config)
 }
 
-main <- function(config_file){
+main <- function(parsedArgs){
   # load config file
-  config = tryCatch(getConfig(config_file), error = function(e) { print("!!! Error in loading the config file. Please make sure the file follows YAML format."); break} )
-  
+  config = tryCatch(getConfig(parsedArgs$config_file), error = function(e) { print("!!! Error in loading the config file. Please make sure the file follows YAML format."); break} )
+  preprocess.main(data_file=config$files$data, keys_file=config$files$keys, output_file=config$files$output_dir, filter_data=config$general$filter_contaminants, rm_co=config$general$remove_carryover, nupsc_flag=config$general$spectral_counts, collapse_file=config$files$collapse, exclusions_file=config$files$exclusions, remove_file=config$files$remove)
 }
 
 option_list <- list(
@@ -24,8 +30,8 @@ option_list <- list(
               help="configuration file in YAML format")
 )
 parsedArgs = parse_args(OptionParser(option_list = option_list), args = commandArgs(trailingOnly=T))
+## TEST override
+parsedArgs$config_file = paste0(getwd(),"/tests/APMS_TEST.yml")
 
-## test override
-parsedArgs$config_file = "~/projects/mist/APMS_TEMPLATE.yml"
-
-main(parsedArgs$config_file)
+## CALL MAIN WITH ALL ARGS
+main(parsedArgs)
