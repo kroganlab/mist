@@ -10,6 +10,7 @@ preprocess:
   enabled : 1
   remove_carryover : 0
   filter_contaminants : 1
+  contaminants_file : files/contaminants.fasta
   prey_colname : ms_uniprot_ac
   pepcount_colname : ms_num_unique_peptide
   matrix_file : 
@@ -19,7 +20,6 @@ qc:
   ip_distributions: 1
 mist:
   enabled : 1
-  filter : 0
   # possible training values: supervised (using training_file), unsupervised (using PCA), fixed (using weights below)
   training : unsupervised 
   training_file : 
