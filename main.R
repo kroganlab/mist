@@ -31,6 +31,12 @@ main <- function(parsedArgs){
     preprocess.main(data_file=config$files$data, keys_file=config$files$keys, output_file=paste(config$files$output_dir,'preprocessed.txt',sep='/'), filter_data=config$general$filter_contaminants, rm_co=config$general$remove_carryover, nupsc_flag=config$general$spectral_counts, collapse_file=config$files$collapse, exclusions_file=config$files$specifity_exclusions, remove_file=config$files$remove)
   }
   
+  if(config$qc$enabled){
+    print(">> QUALITY CONTROL")
+    qc.main(matrix_file=config$qc$matrix_file, font_scale=config$qc$cluster_font_scale, cluster=config$qc$cluster, ip_dists=config$qc$ip_distributions)
+  }
+  
+  
 }
 
 option_list <- list(
