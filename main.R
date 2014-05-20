@@ -5,7 +5,9 @@ suppressMessages(library(optparse))
 PIPELINE=T
 
 ## load all externeal files
-source("src/preprocess_data.R")
+source("src/preprocess.R")
+source("src/qc.R")
+source("src/mist.R")
 
 getConfig <- function(config_file){
   x = readLines(config_file)
@@ -25,7 +27,9 @@ main <- function(parsedArgs){
   #dir.create(file.path(mainDir, subDir), showWarnings = FALSE)
   dir.create(config$files$output_dir, showWarnings = T)
   
+  ##############################################
   ## main switches between parts of the pipeline
+  
   if(config$preprocess$enabled){
     print(">> PREPROCESSING FILES")
     preprocess.main(data_file=config$files$data, keys_file=config$files$keys, output_file=paste(config$files$output_dir,'preprocessed.txt',sep='/'), filter_data=config$general$filter_contaminants, rm_co=config$general$remove_carryover, nupsc_flag=config$general$spectral_counts, collapse_file=config$files$collapse, exclusions_file=config$files$specifity_exclusions, remove_file=config$files$remove)
@@ -36,6 +40,9 @@ main <- function(parsedArgs){
     qc.main(matrix_file=config$qc$matrix_file, font_scale=config$qc$cluster_font_scale, cluster=config$qc$cluster, ip_dists=config$qc$ip_distributions)
   }
   
+  if(config$mist$enabled){
+    mist.main(,weights=)
+  }
   
 }
 
