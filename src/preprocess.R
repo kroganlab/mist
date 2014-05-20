@@ -98,7 +98,7 @@ preprocess.createMatrix <- function(y, collapse_file, exclusions_file, remove_fi
 
   # collapse bait names from "collapse" file
   if(file.info(collapse_file)$size >0){
-    collapse <- read.delim(collapse_file, sep="\t", header=FALSE, stringsAsFactors=FALSE)
+    collapse <- read.delim(collapse_file, sep="\t", header=F, stringsAsFactors=FALSE)
     for( i in 1:dim(collapse)[1] ){
       y$BAIT[y$BAIT == collapse[i,1]] = collapse[i,2]
     }
@@ -108,7 +108,7 @@ preprocess.createMatrix <- function(y, collapse_file, exclusions_file, remove_fi
   
   # remove the "remove" ip's
   if(file.info(remove_file)$size>0){
-    removals <- read.delim(remove_file, sep="\t", header=FALSE, stringsAsFactors=FALSE)
+    removals <- read.delim(remove_file, sep="\t", header=F, stringsAsFactors=FALSE)
     y.len = dim(y)[1]
     y <- y[!y$id %in% removals[,1],]
     if(dim(removals)[1]>0 & y.len == dim(y)[1])
@@ -136,7 +136,7 @@ preprocess.createMatrix <- function(y, collapse_file, exclusions_file, remove_fi
   
   # handle exclusions
   if(file.info(exclusions_file)$size>0){
-    exclusions <- unique(read.delim(, sep="\t", header=FALSE, stringsAsFactors=FALSE))
+    exclusions <- unique(read.delim(exclusions_file, sep="\t", header=F, stringsAsFactors=FALSE))
     ips <-unique(y[,c('id','BAIT')])
     ips <- merge(ips, exclusions, by.x="BAIT", by.y="V1", all.x=TRUE)[, c(2,1,3)]
     ips <- ips[order(ips$id, ips$BAIT),]
@@ -161,12 +161,12 @@ preprocess.createMatrix <- function(y, collapse_file, exclusions_file, remove_fi
 }
 
 # wrapper to filter data and merge with keys
-preprocess.main <- function(data_file, keys_file, output_file, filter_data, contaminants_file, collapse_file, exclusions_file, remove_file, prey_colname, pepcount_colname){
+preprocess.main <- function(data_file, keys_file, output_file, filter_data, contaminants_file, collapse_file, exclusions_file, remove_file, prey_colname, pepcount_colname, rm_co=T){
   print("Reading Files")
   #out_file <- unlist(strsplit(output_file,"\\."))[1]		#get ouput_dir from output_file
 	#out_dir <- paste(out_dir[-length(out_dir)],collapse="/")
 	df <- read.delim(data_file, sep="\t", header=TRUE, stringsAsFactors=FALSE)
-	keys <- read.delim(keys_file, sep="\t", header=TRUE, stringsAsFactors=FALSE)
+	keys <- read.delim(keys_file, sep="\t", header=F, stringsAsFactors=FALSE)
 	names(keys) = c("id", "BAIT")
 	
   # quality control
@@ -185,7 +185,6 @@ preprocess.main <- function(data_file, keys_file, output_file, filter_data, cont
 	print("MERGING KEYS WITH DATA")
 	df <- preprocess.mergeData(df, keys)
 	df <- df[preprocess.orderExperiments(df),]  #GENERATES WARNINGS WHEN ID# HAS CHARACTERS IN IT: FIXED
-  outfile = paste(out_file, ".txt", sep="")
 	write.table(df, output_file, eol="\n", sep="\t", quote=F, row.names=F, col.names=T, na="")
 
   # create matrix to be used by MiST
@@ -194,7 +193,6 @@ preprocess.main <- function(data_file, keys_file, output_file, filter_data, cont
   df <- preprocess.createMatrix(df, collapse_file, exclusions_file, remove_file, prey_colname, pepcount_colname) #return a list b/c of space padding
 	write.table(df[[1]], matrix_output_file, eol="\n", sep="\t", quote=F, row.names=F, col.names=F, na="")
   write.table(df[[2]], matrix_output_file, eol="\n", sep="\t", quote=F, row.names=F, col.names=F, na="", append=TRUE)
-  
   
 	# Remove Carryover
 	#if(rm_co==1){
@@ -232,4 +230,4 @@ if(is.null(PIPELINE)){
 
 ## TODO: make the following code into a unit-test 
 config = yaml.load(string=paste(readLines("tests/APMS_TEST.yml"),collapse='\n'))
-preprocess.main(data_file=config$files$data, keys_file=config$files$keys, output_file=paste(config$files$output_dir,'preprocessed.txt',sep='/'), filter_data=config$preprocess$filter_contaminants, contaminants_file=config$preprocess$contaminants_file , rm_co=config$preprocess$remove_carryover, collapse_file=config$files$collapse, exclusions_file=config$files$specificity_exclusions, remove_file=config$files$remove, prey_colname=config$preprocess$prey_colname, pepcount_colname=config$preprocess$pepcount_colname)
+preprocess.main(data_file=config$files$data, keys_file=config$files$keys, output_file=paste(config$files$output_dir,'preprocessed.txt',sep='/'), filter_data=config$preprocess$filter_contaminants, contaminants_file=config$preprocess$contaminants_file, rm_co=config$preprocess$remove_carryover, collapse_file=config$files$collapse, exclusions_file=config$files$specificity_exclusions, remove_file=config$files$remove, prey_colname=config$preprocess$prey_colname, pepcount_colname=config$preprocess$pepcount_colname)
