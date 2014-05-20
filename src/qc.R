@@ -57,7 +57,7 @@ qc.ipDists = function(data_matrix, ip_baits, baseName){
   theme_set(theme_bw(base_size = 18,base_family='Helvetica'))
   
   pdf(gsub('.txt','_proteincounts.pdf',baseName), width=10, height=10)
-  print(ggplot(data_long, aes(x=ip)) + geom_bar(stat='bin') + facet_wrap(facets= ~bait, scales='free_x', nrow=5))
+  print(ggplot(data_long, aes(x=ip)) + geom_bar(stat='bin') + facet_wrap(facets= ~bait, scales='free_x', ncol=5))
   dev.off()
   
   ## solution with ggplot
