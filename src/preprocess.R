@@ -26,8 +26,8 @@ preprocess.mergeData <- function(dat, keys){
       print("    MISSING BAITS: ")
       print(setdiff(ids, unique(dat[,1])))
   }
-  print(paste("  ", length(unique(dat[,1])), "/", length(ids), " BAITS DETECTED IN KEYS FILE", sep=""))
-  if(length(unique(dat[,1]))<length(ids)){
+  print(paste("  ", length(unique(keys[,1])), "/", length(ids), " BAITS DETECTED IN KEYS FILE", sep=""))
+  if(length(unique(keys[,1]))<length(ids)){
     print("    MISSING BAITS: ")
     print(setdiff(ids, unique(keys[,1])))
   }
