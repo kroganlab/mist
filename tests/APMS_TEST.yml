@@ -21,18 +21,20 @@ qc:
   ip_distributions: 1
 mist:
   enabled : 1
-  # possible training values: supervised (using training_file), unsupervised (using PCA), fixed (using weights below)
-  training : unsupervised 
+  matrix_file : tests/processed/preprocessed_MAT.txt
+  # possible weights values: trained (using training_file), PCA, fixed (using weights below)
+  weights : fixed 
   training_file : 
-  reproducibility : 
-  specificity : 
-  abundance : 
-annotate:
-  enabled : 0
-  ip_info : 0
-  uniprot_dir : /Users/everschueren/Projects/HPCKrogan/Scripts/MSPipeline/files/
-  species : HUMAN-HIV
-enrichment:
-  enabled : 0
-  bait_col : 1
-  prey_col : 2
+  reproducibility : 0.30853 
+  specificity : 0.68551
+  abundance : 0.00596
+
+# annotate:
+#   enabled : 0
+#   ip_info : 0
+#   uniprot_dir : /Users/everschueren/Projects/HPCKrogan/Scripts/MSPipeline/files/
+#   species : HUMAN-HIV
+# enrichment:
+#   enabled : 0
+#   bait_col : 1
+#   prey_col : 2
