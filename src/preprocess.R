@@ -233,14 +233,3 @@ if(is.null(PIPELINE)){
 ## TODO: make the following code into a unit-test 
 config = yaml.load(string=paste(readLines("tests/APMS_TEST.yml"),collapse='\n'))
 preprocess.main(data_file=config$files$data, keys_file=config$files$keys, output_file=paste(config$files$output_dir,'preprocessed.txt',sep='/'), filter_data=config$preprocess$filter_contaminants, contaminants_file=config$preprocess$contaminants_file , rm_co=config$preprocess$remove_carryover, collapse_file=config$files$collapse, exclusions_file=config$files$specificity_exclusions, remove_file=config$files$remove, prey_colname=config$preprocess$prey_colname, pepcount_colname=config$preprocess$pepcount_colname)
-
-#data_file = "~/HPC/MSPipeline/tests/Benchmark/kinases/data/input/kinases_data.txt"
-#keys_file = "~/HPC/MSPipeline/tests/Benchmark/kinases/data/input/kinases_keys.txt"
-#collapse_file = "~/HPC/MSPipeline/tests/Benchmark/kinases/data/input/kinases_collapse.txt"
-#exclusions_file = "~/HPC/MSPipeline/tests/Benchmark/kinases/data/input/kinases_exclusions.txt"
-#remove_file = "~/HPC/MSPipeline/tests/Benchmark/kinases/data/input/kinases_remove.txt"
-#output_file = "~/Desktop/test_matrix.txt"
-#nupsc_flag = 1
-#remove_carryover=0
-#filter_data=1
-#main(data_file, keys_file, output_file, filter_data, remove_carryover, nupsc_flag, collapse_file, exclusions_file, remove_file)

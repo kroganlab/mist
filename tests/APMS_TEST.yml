@@ -12,9 +12,10 @@ preprocess:
   filter_contaminants : 1
   contaminants_file : files/contaminants.fasta
   prey_colname : ms_uniprot_ac
-  pepcount_colname : ms_num_unique_peptide
-  matrix_file : 
+  pepcount_colname : ms_num_unique_peptide 
 qc:
+  enabled : 1
+  matrix_file : tests/processed/preprocessed_MAT.txt
   cluster : 1
   cluster_font_scale : 5
   ip_distributions: 1
