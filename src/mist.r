@@ -3,7 +3,7 @@ suppressMessages(library(optparse))
 
 # simplify/convert data into workable form
 mist.processMatrix <- function(x){
-	info = data.frame(Ip=colnames(x)[5:dim(x)[2]], Bait=as.vector(t(x[1,5:dim(x)[2]])),Specificity_exclusion=as.vector(t(x[2,5:dim(x)[2]])))
+	info = data.frame(Ip=colnames(x)[5:dim(x)[2]], Bait=as.vector(t(x[1,5:dim(x)[2]])),Specificity_exclusion=as.vector(t(x[2,5:dim(x)[2]])), stringsAsFactors=F)
 	x <- x[-c(1:2),]
 	names(x)[1:3] <- c("Preys", "PepAtlas", "Length")
 	row.names(x) <- x$Preys
@@ -83,30 +83,25 @@ mist.getMetrics <- function(x, info){
 mist.getSpecificity <- function(abundance, info){
   specificity <- abundance
   
-  ## FIX? test! 
-  ## make a logical matrix to compute occurences
-  abundance_logical = abundance
-  abundance_logical[abundance_logical>0]=1
-  
   for( i in 1:dim(abundance)[2]){
     bait <- colnames(abundance)[i]
-    # find bait in exclusions list
-    idx <- which(info$Specificity_exclusion==info$bait)
-    exes <- unique(unlist(strsplit(as.character(info$Specificity_exclusion[idx]),"\\|")))
-    # find where excluded baits are in matrix
-    idx <- which(!is.na(match(colnames(abundance), exes)))
+    # find baits to exclude in exclusions list
+    baits_to_exclude = unique(info[info$Bait==bait, 'Specificity_exclusion'])
+    baits_to_exclude = setdiff(baits_to_exclude,bait)
+    baits_to_include = setdiff(colnames(abundance),baits_to_exclude)
     
-    if(length(idx)>0 & sum(rowSums(abundance[,-idx]))>0){   # there are exclusions AND all the rowsums of the data != 0
-      specificity[,i] <- specificity[,i]/rowSums(abundance_logical[,-idx])
-    }else if(length(idx)==0 & sum(rowSums(abundance))>0){    # no exclusions AND all the rowsums of the data != 0
-      specificity[,i] <- specificity[,i]/rowSums(abundance_logical)
+    if(length(baits_to_include)==1){
+      specificity[,i] <- 1
+    }else if(length(baits_to_exclude)>0 & sum(rowSums(abundance[,baits_to_include]))>0){   # there are exclusions AND all the rowsums of the data != 0
+      specificity[,i] <- specificity[,i]/rowSums(abundance[,baits_to_include])
+    }else if(length(baits_to_exclude)==0 & sum(rowSums(abundance))>0){    # no exclusions AND all the rowsums of the data != 0
+      specificity[,i] <- specificity[,i]/rowSums(abundance)
     }else{    # rowsums of the data = 0
       specificity[,i] <- 0
     }
     ## remove NA's from dividing by 0
     specificity[is.na(specificity[,i]),i] <- 0
     ## if specificity == Inf it means all other rows were 0, so set to 1 (max.value)  
-    specificity[is.infinite(specificity[,i]),i] <- 1
   }
   return(specificity)
 }
@@ -159,7 +154,8 @@ mist.main <- function(matrix_file, weights='fixed', w_R=0.30853, w_A=0.00596, w_
   S <- mist.vectorize(dat[[3]])
   
   if(weights == 'fixed'){
-    results = data.frame(Bait=A$Bait,Prey=A$Prey,Abundance=A$Xscore,Reproducibility=R$Xscore,Specificity=S$Xscore, MIST=x$Repro*w_R + x$Abundance*w_A + x$Specificity*w_S)  
+    mist_scores = MIST=R$Xscore*w_R + A$Xscore*w_A + S$Xscore*w_S
+    results = data.frame(Bait=A$Bait,Prey=A$Prey,Abundance=A$Xscore,Reproducibility=R$Xscore,Specificity=S$Xscore, MIST=mist_scores)  
   }else if(weights == 'PCA'){
     #This is more or less ignored since we always use hiv weights 
     ## TO DO
@@ -184,7 +180,7 @@ mist.main <- function(matrix_file, weights='fixed', w_R=0.30853, w_A=0.00596, w_
   
   #write out results
   output_file <- gsub('.txt', "_MIST.txt", matrix_file)
-  write.table(results, output_file, row.names=FALSE, col.names=TRUE, quote=FALSE, sep="\t" )
+  write.table(results_with_samples, output_file, row.names=FALSE, col.names=TRUE, quote=FALSE, sep="\t" )
 }
 
 if(is.null(PIPELINE)){
