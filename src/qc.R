@@ -44,7 +44,7 @@ qc.getIpToBaits = function(input_matrix){
 
 qc.clusterHeatmap = function(data_matrix, output_file, ip_baits, font_scale){
   data_matrix_w_names = data_matrix
-  colnames(data_matrix_w_names) = do.call(paste, c(ip_baits, sep = " "))
+  colnames(data_matrix_w_names) = do.call(paste, c(ip_baits[,c('bait','ip')], sep = " "))
   cor_matrix = cor(data_matrix_w_names, use="pairwise.complete.obs", method="pearson")
   color_scale = colorRampPalette(brewer.pal(7,"RdBu"))(9)
   pheatmap(cor_matrix, cluster_rows=T, cluster_cols=T, scale="none",fontsize_row=font_scale,fontsize_col=font_scale, cellwidth=font_scale, cellheight=font_scale, border_color=NA, filename=output_file, color=color_scale, breaks=1:10/10, clustering_distance_rows="correlation", clustering_distance_cols="correlation", treeheight_row=0, treeheight_col=0)  
@@ -54,20 +54,22 @@ qc.ipDists = function(data_matrix, ip_baits, baseName){
   tmp = melt(data_matrix, varnames=c("prey","ip"), value.name="count")
   data_long = merge(tmp, ip_baits, by="ip")
   data_long = data_long[data_long$count > 0,]
-  theme_set(theme_bw(base_size = 18,base_family='Helvetica'))
+  theme_set(theme_bw(base_size = 12,base_family='Helvetica'))
   
-  pdf(gsub('.txt','_proteincounts.pdf',baseName), width=10, height=10)
-  print(ggplot(data_long, aes(x=ip)) + geom_bar(stat='bin') + facet_wrap(facets= ~bait, scales='free_x', ncol=5))
+  pdf(gsub('.txt','_proteincounts.pdf',baseName), width=10, height=15)
+  print(ggplot(data_long, aes(x=ip)) + geom_bar(stat='bin') + facet_wrap(facets= ~bait, scales='free_x', ncol=5) + theme(axis.text.x = element_text(angle = 90, hjust = 1)))
   dev.off()
   
   ## solution with ggplot
   #ggplot(data_long, aes(x=log2(count), colour=factor(replicate))) + geom_density(alpha=1, size=1) + facet_wrap(facets= ~bait, scales='fixed') 
   
   ## solution to give every plot its separate legend with gridExtra library 
-  pdf(gsub('.txt','_peptidecount_dists.pdf',baseName), width=10, height=10)
+  pdf(gsub('.txt','_peptidecount_dists.pdf',baseName), width=30, height=30)
   out = by(data = data_long, INDICES = data_long$bait, FUN = function(m) {
     m = droplevels(m)
-    m = ggplot(m, aes(x=log2(count), colour=ip)) + geom_density(alpha=1, size=1)
+    #print(m)
+    m = ggplot(m, aes(x=count, colour=ip)) + geom_density(alpha=1, size=1) 
+    ## + theme(legend.title=element_text(unique(m$bait)))
   })
   do.call(grid.arrange, out)
   dev.off()
