@@ -142,7 +142,7 @@ mist.getSampleOccurences = function(m3d_norm, info){
 #scores <- cbind(scores, mist_hiv=scores$Repro*0.30853 + scores$Abundance*0.00596 + scores$Specificity*0.68551 )
 ##############################################################################################################
 
-mist.main <- function(matrix_file, weights='fixed', w_R=0.30853, w_A=0.00596, w_S=0.68551){
+mist.main <- function(matrix_file, weights='fixed', w_R=0.30853, w_A=0.00596, w_S=0.68551, training_file){
   dat <- read.delim(matrix_file, sep="\t", header=TRUE, stringsAsFactors=FALSE)
   dat <- mist.processMatrix(dat)
   m3d_norm <- mist.getM3D_normalized(dat[[1]])
@@ -153,21 +153,26 @@ mist.main <- function(matrix_file, weights='fixed', w_R=0.30853, w_A=0.00596, w_
   A <- mist.vectorize(dat[[2]])
   S <- mist.vectorize(dat[[3]])
   
+  metrics = data.frame(Bait=A$Bait,Prey=A$Prey,Abundance=A$Xscore,Reproducibility=R$Xscore,Specificity=S$Xscore)
+  ## only retain non-zero results
+  metrics = metrics[metrics$Abundance>0,]
+  
   if(weights == 'fixed'){
-    mist_scores = MIST=R$Xscore*w_R + A$Xscore*w_A + S$Xscore*w_S
-    results = data.frame(Bait=A$Bait,Prey=A$Prey,Abundance=A$Xscore,Reproducibility=R$Xscore,Specificity=S$Xscore, MIST=mist_scores)  
+    mist_scores = MIST=metrics$Reproducibility*w_R + metrics$Abundance*w_A + metrics$Specificity*w_S
+    results = data.frame(metrics, MIST=mist_scores)  
   }else if(weights == 'PCA'){
     #This is more or less ignored since we always use hiv weights 
-    ## TO DO
-    x <- mist.doPCA(R,A,S) 
+    ## TO DO, currently disabled
+    ## x <- mist.doPCA(R,A,S)
+    print('currently disabled')
+    break
   }else if(weights == 'training'){
-    ## TO DO 
+    training_set = read.delim(training_file, header=F, stringsAsFactors=F)
+    colnames(training_set) = c('Bait','Prey')
+    mist.train(metrics, training_file)
   }else{
     print(sprintf('unrecognized MIST option: %s',weights))
   }
-  
-  ## only retain non-zero results
-  results = results[results$Abundance>0,]
   
   ## per bait get all IPs the prey was found in
   ip_occurences = mist.getSampleOccurences(m3d_norm, info)
