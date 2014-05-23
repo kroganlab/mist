@@ -1,9 +1,10 @@
 #! /usr/bin/Rscript
 suppressMessages(library(optparse))
+source('src/training.R')
 
 # simplify/convert data into workable form
-processMatrix <- function(x){
-	baits <- x[1,5:dim(x)[2]]
+mist.processMatrix <- function(x){
+	info = data.frame(Ip=colnames(x)[5:dim(x)[2]], Bait=as.vector(t(x[1,5:dim(x)[2]])),Specificity_exclusion=as.vector(t(x[2,5:dim(x)[2]])), stringsAsFactors=F)
 	x <- x[-c(1:2),]
 	names(x)[1:3] <- c("Preys", "PepAtlas", "Length")
 	row.names(x) <- x$Preys
@@ -12,11 +13,11 @@ processMatrix <- function(x){
 	for(i in idx){
 		x[,i] <- as.numeric(x[,i])
 	}
-	return(list(x, baits))
+	return(list(x, info))
 }
 
 # "normalize" the M3D variable
-getM3D_normalized <- function(x){
+mist.getM3D_normalized <- function(x){
 	# divide cols by their bait length
 	x1 <- x[,5:dim(x)[2]]/x[,3]
 	# normalize by column (of x)	--	M3D
@@ -26,15 +27,14 @@ getM3D_normalized <- function(x){
 	return(x1)
 }
 
-
 # calculate Abundance, Reproducibility, and Specificity
-getMetrics <- function(x, baits, exclusions){
+mist.getMetrics <- function(x, info){
 	reproducibility <- c()
 	abundance <- c()
 	
 	# look at data per bait
-	for( i in unique(baits)){
-		bidx <- which(baits == i)
+	for( i in unique(info$Bait)){
+		bidx <- which(info$Bait == i)
 		y <- x[,bidx]
 		# normalize by row by bait
 		
@@ -75,37 +75,40 @@ getMetrics <- function(x, baits, exclusions){
 	# Specificity
 	# ----------------------
   # Must account for specificity exclusions
-	specificity <- getSpecificity(abundance, exclusions)
+	specificity <- mist.getSpecificity(abundance, info)
 	#specificity <- t(apply(abundance,1,function(z) z/sum(z)))
 	return(list(reproducibility, abundance, specificity))
 }
 
 # calculate specificity taking the exclusions into account
-getSpecificity <- function(abundance, exclusions){
+mist.getSpecificity <- function(abundance, info){
   specificity <- abundance
+  
   for( i in 1:dim(abundance)[2]){
     bait <- colnames(abundance)[i]
-    # find bait in exclusions list
-    idx <- which(exclusions[,1]==bait)
-    exes <- unique(unlist(strsplit(exclusions[idx,2],"\\|")))
-    # find where excluded baits are in matrix
-    idx <- which(!is.na(match(colnames(abundance), exes)))
+    # find baits to exclude in exclusions list
+    baits_to_exclude = unique(info[info$Bait==bait, 'Specificity_exclusion'])
+    baits_to_exclude = setdiff(baits_to_exclude,bait)
+    baits_to_include = setdiff(colnames(abundance),baits_to_exclude)
     
-    if(length(idx)>0 & sum(rowSums(abundance[,-idx]))>0){   # there are exclusions AND all the rowsums of the data != 0
-      specificity[,i] <- specificity[,i]/rowSums(abundance[,-idx])
-    }else if(length(idx)==0 & sum(rowSums(abundance))>0){    # no exclusions AND all the rowsums of the data != 0
+    if(length(baits_to_include)==1){
+      specificity[,i] <- 1
+    }else if(length(baits_to_exclude)>0 & sum(rowSums(abundance[,baits_to_include]))>0){   # there are exclusions AND all the rowsums of the data != 0
+      specificity[,i] <- specificity[,i]/rowSums(abundance[,baits_to_include])
+    }else if(length(baits_to_exclude)==0 & sum(rowSums(abundance))>0){    # no exclusions AND all the rowsums of the data != 0
       specificity[,i] <- specificity[,i]/rowSums(abundance)
     }else{    # rowsums of the data = 0
       specificity[,i] <- 0
     }
-    # remove NA's from dividing by 0
+    ## remove NA's from dividing by 0
     specificity[is.na(specificity[,i]),i] <- 0
+    ## if specificity == Inf it means all other rows were 0, so set to 1 (max.value)  
   }
   return(specificity)
 }
 
 # vectorize the metrics while keeping the names straight
-vectorize <- function(x){
+mist.vectorize <- function(x){
 	temp <- c()
 	for(i in 1:dim(x)[2] ){
 		tmp <- as.data.frame(cbind(x[,i], colnames(x)[i], names(x[,i])), stringsAsFactors=FALSE)
@@ -116,9 +119,8 @@ vectorize <- function(x){
 	return(temp[,c(3,2,1)])
 }
 
-
 # Perform PCA analysis AS DONE IN MIST
-doPCA <- function(R,A,S){
+mist.doPCA <- function(R,A,S){
 	# vectorize the variables
 	m <- cbind(R=R$Xscore, A=A$Xscore, S=S$Xscore )
 	x <- princomp(m)	# <- shouldn't we mean scale per variable before this step?
@@ -131,54 +133,80 @@ doPCA <- function(R,A,S){
 	return(scores)
 }
 
+mist.getSampleOccurences = function(m3d_norm, info){
+  data_melted = melt(m3d_norm, value.name='abundance', varnames=c('Prey','Ip'))
+  data_merged = merge(info, data_melted[data_melted$abundance>0,], by='Ip')
+  ip_occurences = aggregate(data_merged[,c('Bait','Prey','Ip')], by=as.list(data_merged[,c('Bait','Prey')]), FUN=function(x)paste(unique(x),collapse=','))
+  ip_occurences[,c('Bait','Prey','Ip')]
+}
+
 #scores <- cbind(scores, mist_hiv=scores$Repro*0.30853 + scores$Abundance*0.00596 + scores$Specificity*0.68551 )
 ##############################################################################################################
 
-main <- function(data_file, exclusions_file, MAT_name, self_score){
-  dat <- read.delim(data_file, sep="\t", header=TRUE, stringsAsFactors=FALSE)
-  exclusions <- read.delim(exclusions_file, sep="\t", header=FALSE, stringsAsFactors=FALSE)
+mist.main <- function(matrix_file, weights='fixed', w_R=0.30853, w_A=0.00596, w_S=0.68551, training_file){
+  dat <- read.delim(matrix_file, sep="\t", header=TRUE, stringsAsFactors=FALSE)
+  dat <- mist.processMatrix(dat)
+  m3d_norm <- mist.getM3D_normalized(dat[[1]])
+  info = dat[[2]]
+
+  dat <- mist.getMetrics(m3d_norm, info)
+  R <- mist.vectorize(dat[[1]])
+  A <- mist.vectorize(dat[[2]])
+  S <- mist.vectorize(dat[[3]])
   
-  dat <- processMatrix(dat)
-  m3d_norm <- getM3D_normalized(dat[[1]])
+  metrics = data.frame(Bait=A$Bait,Prey=A$Prey,Abundance=A$Xscore,Reproducibility=R$Xscore,Specificity=S$Xscore)
+  ## only retain non-zero results
+  metrics = metrics[metrics$Abundance>0,]
+  ## for debug purposes
+#   output_file <- gsub('.txt', "_MIST_METRICS.txt", matrix_file)
+#   write.table(metrics, output_file, row.names=FALSE, col.names=TRUE, quote=FALSE, sep="\t" )
   
-  dat <- getMetrics(m3d_norm, unlist(dat[[2]]), exclusions)
-  R <- vectorize(dat[[1]])
-  A <- vectorize(dat[[2]])
-  S <- vectorize(dat[[3]])
-  
-  x <- doPCA(R,A,S) #This is more or less ignored since we always use hiv weights
-  x <- cbind(x, MIST_hiv=x$Repro*0.30853 + x$Abundance*0.00596 + x$Specificity*0.68551 )
-  x <- x[,c('Bait','Prey','Reproducibility','Abundance','Specificity','MIST_self','MIST_hiv')]
-  
-  #write out MIST_hiv score/metrics
-  out_file <- paste(MAT_name, "_MIST_HIV_metrics.txt", sep="")
-  write.table(x[,c('Bait','Prey','Reproducibility','Abundance','Specificity')], out_file, row.names=FALSE, col.names=TRUE, quote=FALSE, sep="\t" )
-  out_file <- paste(MAT_name, "_MIST_HIV_scores.txt", sep="")
-  write.table(x[,c('Bait','Prey','MIST_hiv')], out_file, row.names=FALSE, col.names=TRUE, quote=FALSE, sep="\t" )
-  
-  #write out MIST_self score/metrics
-  if(self_score == 1){
-    out_file <- paste(MAT_name, "_MIST_SELF_metrics.txt", sep="")
-    write.table(x[,c('Bait','Prey','Reproducibility','Abundance','Specificity')], out_file, row.names=FALSE, col.names=TRUE, quote=FALSE, sep="\t" )
-    out_file <- paste(MAT_name, "_MIST_SELF_scores.txt", sep="")
-    write.table(x[,c('Bait','Prey','MIST_self')], out_file, row.names=FALSE, col.names=TRUE, quote=FALSE, sep="\t" )
+  if(weights == 'fixed'){
+    mist_scores = MIST=metrics$Reproducibility*w_R + metrics$Abundance*w_A + metrics$Specificity*w_S
+    results = data.frame(metrics, MIST=mist_scores)  
+  }else if(weights == 'PCA'){
+    #This is more or less ignored since we always use hiv weights 
+    ## TO DO, currently disabled
+    ## x <- mist.doPCA(R,A,S)
+    print('currently disabled')
+    break
+  }else if(weights == 'training'){
+    training_set = read.delim(training_file, header=F, stringsAsFactors=F)
+    colnames(training_set) = c('Bait','Prey')
+    mist.train.main(metrics, training_file)
+  }else{
+    print(sprintf('unrecognized MIST option: %s',weights))
   }
+  
+  ## per bait get all IPs the prey was found in
+  ip_occurences = mist.getSampleOccurences(m3d_norm, info)
+  
+  if(nrow(ip_occurences) != nrow(results)){
+    print(" ERROR : INCONSISTENCY BETWEEN SCORE MATRIX AND IP OCCURENCE MATRIX ")
+  }
+  
+  results_with_samples = merge(results, ip_occurences, by=c('Bait','Prey'))
+  
+  #write out results
+  output_file <- gsub('.txt', "_MIST.txt", matrix_file)
+  write.table(results_with_samples, output_file, row.names=FALSE, col.names=TRUE, quote=FALSE, sep="\t" )
 }
 
+if(!exists("PIPELINE") || PIPELINE==F){
+  option_list <- list(
+    make_option(c("-d", "--data_file"),
+                help="data file containing values"), 
+    make_option(c("-b", "--exclusions_file"),
+                help="exclusions file"),
+    make_option(c("-n", "--MAT_name"),
+                help="name of the MAT data file"),
+    make_option(c("-s", "--self_score"),
+                help="calculate MIST self score (0/1)") 
+  )
+  parsedArgs = parse_args(OptionParser(option_list = option_list), args = commandArgs(trailingOnly=T))
+}
 
-
-option_list <- list(
-  make_option(c("-d", "--data_file"),
-              help="data file containing values"), 
-  make_option(c("-b", "--exclusions_file"),
-              help="exclusions file"),
-  make_option(c("-n", "--MAT_name"),
-              help="name of the MAT data file"),
-  make_option(c("-s", "--self_score"),
-              help="calculate MIST self score (0/1)") 
-)
-parsedArgs = parse_args(OptionParser(option_list = option_list), args = commandArgs(trailingOnly=T))
-main(parsedArgs$data_file, parsedArgs$exclusions_file, parsedArgs$MAT_name, parsedArgs$self_score)
-
-
-
+## TODO: make the following code into a unit-test 
+# config = yaml.load(string=paste(readLines("tests/APMS_TEST.yml"),collapse='\n'))
+# config = yaml.load(string=paste(readLines("tests/entero/APMS_ENTERO.yml"),collapse='\n'))
+# mist.main(matrix_file=config$mist$matrix_file, weights=config$mist$weights, w_R=config$mist$reproducibility, w_A=config$mist$abundance, w_S=config$mist$specificity, training_file=config$mist$training_file)

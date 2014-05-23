@@ -1,7 +1,0 @@
-hIP13-19	VIF
-hIP159-2	VIF
-hIP154-2	VIF
-hIP146-4	VIF
-hIP154-1	vector
-hIP146-1	vector
-hIP159-1	vector
