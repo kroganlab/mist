@@ -80,14 +80,14 @@ qc.main = function(matrix_file, font_scale, cluster=T, ip_dists=T){
   data_matrix = qc.dataMatrix(ip_matrix)
   ip_baits = qc.getIpToBaits(ip_matrix)
   if(cluster){
-    qc.clusterHeatmap(data_matrix, gsub('.txt','.pdf',config$qc$matrix_file), ip_baits, font_scale)  
+    qc.clusterHeatmap(data_matrix, gsub('.txt','.pdf',matrix_file), ip_baits, font_scale)  
   }
   if(ip_dists){
-    qc.ipDists(data_matrix, ip_baits, config$qc$matrix_file)
+    qc.ipDists(data_matrix, ip_baits, matrix_file)
   }
 }
 
-if(is.null(PIPELINE)){
+if(!exists("PIPELINE") || PIPELINE==F){
   option_list <- list(
     make_option(c("-v", "--verbose"), action="store_true", default=TRUE,
                 help="Print extra output [default]"),
@@ -103,5 +103,6 @@ if(is.null(PIPELINE)){
   parsedArgs = parse_args(OptionParser(option_list = option_list), args = commandArgs(trailingOnly=T))
 }
 ## TODO: make the following code into a unit-test 
-config = yaml.load(string=paste(readLines("tests/APMS_TEST.yml"),collapse='\n'))
-qc.main(matrix_file=config$qc$matrix_file, font_scale=config$qc$cluster_font_scale, cluster=config$qc$cluster, ip_dists=config$qc$ip_distributions)
+# config = yaml.load(string=paste(readLines("tests/APMS_TEST.yml"),collapse='\n'))
+# config = yaml.load(string=paste(readLines("tests/entero/APMS_ENTERO.yml"),collapse='\n'))
+# qc.main(matrix_file=config$qc$matrix_file, font_scale=config$qc$cluster_font_scale, cluster=config$qc$cluster, ip_dists=config$qc$ip_distributions)

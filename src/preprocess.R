@@ -13,23 +13,21 @@ preprocess.filterContaminants = function(contaminant_fasta, df) {
 	UniprotNames = as.data.frame(fastaFFirstNames[grep("^[A-Z]{1}[0-9]{1}[A-Z,0-9]{4}(\\-1)*", fastaFFirstNames[, 1]), ])
 	colnames(UniprotNames)[1] = "contaminant_key"
 	df_F = df[!(df$ms_uniprot_ac %in% UniprotNames$contaminant_key),]
-	print(sprintf("FILTERED %s CONTAMINANTS", nrow(df) - nrow(df_F)))
+	cat(sprintf("\tFILTERED %s CONTAMINANTS\n", nrow(df) - nrow(df_F)))
 	df_F
 }
 
 # merge data with keys
 preprocess.mergeData <- function(dat, keys){
   ids = union(unique(dat[,1]), unique(keys[,1]) )
-  print(paste("  ", length(ids), " TOTAL BAITS DETECTED", sep=""))
-  print(paste("  ", length(unique(dat[,1])), "/", length(ids), " BAITS DETECTED IN DATA FILE", sep=""))
+  cat(paste("\t", length(ids), " TOTAL BAITS DETECTED\n", sep=""))
+  cat(paste("\t", length(unique(dat[,1])), "/", length(ids), " BAITS DETECTED IN DATA FILE\n", sep=""))
   if(length(unique(dat[,1]))<length(ids)){
-      print("    MISSING BAITS: ")
-      print(setdiff(ids, unique(dat[,1])))
+      cat(sprintf("\tMISSING BAITS: %s \n",setdiff(ids, unique(dat[,1]))))
   }
-  print(paste("  ", length(unique(keys[,1])), "/", length(ids), " BAITS DETECTED IN KEYS FILE", sep=""))
+  cat(paste("\t", length(unique(keys[,1])), "/", length(ids), " BAITS DETECTED IN KEYS FILE\n", sep=""))
   if(length(unique(keys[,1]))<length(ids)){
-    print("    MISSING BAITS: ")
-    print(setdiff(ids, unique(keys[,1])))
+    cat(sprintf("\tMISSING BAITS: %s\n",setdiff(ids, unique(keys[,1]))))
   }
   
 	x <- merge(dat, keys, by="id")
@@ -42,7 +40,7 @@ preprocess.removeDuplicates = function(y){
   #find duplicate prey entries per IP
   idx <- duplicated(y[,c('id','ms_uniprot_ac')])
   if(sum(idx)>0){
-    print("  !! DUPLICATE ID/PREY PAIRS FOUND IN DATA! DUPLICATES REMOVED.")
+    cat("\t!! DUPLICATE ID/PREY PAIRS FOUND IN DATA! DUPLICATES REMOVED\n")
     y <- y[!idx,]
   }
   return(y)
@@ -103,7 +101,7 @@ preprocess.createMatrix <- function(y, collapse_file, exclusions_file, remove_fi
       y$BAIT[y$BAIT == collapse[i,1]] = collapse[i,2]
     }
   }else{
-    print("Collapse file is empty.")
+    cat("\tCollapse file is empty\n")
   }
   
   # remove the "remove" ip's
@@ -112,16 +110,16 @@ preprocess.createMatrix <- function(y, collapse_file, exclusions_file, remove_fi
     y.len = dim(y)[1]
     y <- y[!y$id %in% removals[,1],]
     if(dim(removals)[1]>0 & y.len == dim(y)[1])
-      print(" !! WARNING: REMOVE > 0 BUT NO ENTRIES REMOVED!")
+      cat("\tWARNING: REMOVE > 0 BUT NO ENTRIES REMOVED\n")
   }else{
-    print("Remove file is empty.")
+    cat("Remove file is empty\n")
   }
   
   # Create matrix using either "number of unique peptides" or "spectral count"
   if(!pepcount_colname %in% colnames(y)){
-    print(sprintf("PEPTIDE COUNT COLUMN %s NOT FOUND",pepcount_colname))
+    cat(sprintf("\tPEPTIDE COUNT COLUMN %s NOT FOUND\n",pepcount_colname))
   }else if(!prey_colname %in% colnames(y)){
-    print(sprintf("PREY IDENTIFIER COLUMN %s NOT FOUND",prey_colname))
+    cat(sprintf("\tPREY IDENTIFIER COLUMN %s NOT FOUND\n",prey_colname))
   }else{
     datmat <- dcast(y, ms_uniprot_ac ~ id + BAIT, value.var = pepcount_colname, sum)
   }
@@ -144,7 +142,7 @@ preprocess.createMatrix <- function(y, collapse_file, exclusions_file, remove_fi
     idx <- which(is.na(ips[,3]))
     ips[idx,3] = ips[idx,2]
   }else{
-    print("Exclusions file is empty.")
+    cat("\tExclusions file is empty\n")
     ips <-unique(y[,c('id','BAIT')])
     ips$"PreyType/BaitCov" = ips$BAIT
   }
@@ -152,17 +150,14 @@ preprocess.createMatrix <- function(y, collapse_file, exclusions_file, remove_fi
   # Create headers for matrix
   corner_titles = cbind(c("a","b","c","IP"), c("a","b","c","Bait"), c("Preys","PepAtlas","Length","PreyType/BaitCov"))
   ips <- t(rbind(corner_titles, as.matrix(ips)) )
-  #colnames(ips) = colnames(datmat) = NULL
-  #datmat <- as.data.frame(rbind(ips, as.matrix(datmat)), straingsAsFactors=FALSE)
   
   return(list(ips,datmat))
   
-  #############################################################################################################################################
 }
 
 # wrapper to filter data and merge with keys
 preprocess.main <- function(data_file, keys_file, output_file, filter_data, contaminants_file, collapse_file, exclusions_file, remove_file, prey_colname, pepcount_colname, rm_co=T){
-  print("Reading Files")
+  cat("\tReading Files\n")
   #out_file <- unlist(strsplit(output_file,"\\."))[1]		#get ouput_dir from output_file
 	#out_dir <- paste(out_dir[-length(out_dir)],collapse="/")
 	df <- read.delim(data_file, sep="\t", header=TRUE, stringsAsFactors=FALSE)
@@ -170,41 +165,43 @@ preprocess.main <- function(data_file, keys_file, output_file, filter_data, cont
 	names(keys) = c("id", "BAIT")
 	
   # quality control
-  print("Removing decoys and prey with 0 unique peptides")
+  cat("\tRemoving decoys and prey with 0 unique peptides\n")
   df <- df[-grep("decoy",df[,4]),]               # remove "decoys"
   ## TO DO GIT ISSUE #1
 	df <- df[which(df[,3] > 0 | is.na(df[,3])),]   # remove ms_unique_pep <= 0
   df <- preprocess.removeDuplicates(df)
   
 	#filter contaminants out
-  print("FILTERING COMMON CONTAMINANTS")
+  cat("\tFILTERING COMMON CONTAMINANTS\n")
 	if(filter_data == 1)
 		df <- preprocess.filterContaminants(contaminants_file,df)
 	
 	#merge keys with data
-	print("MERGING KEYS WITH DATA")
+	cat("\tMERGING KEYS WITH DATA\n")
 	df <- preprocess.mergeData(df, keys)
 	df <- df[preprocess.orderExperiments(df),]  #GENERATES WARNINGS WHEN ID# HAS CHARACTERS IN IT: FIXED
 	write.table(df, output_file, eol="\n", sep="\t", quote=F, row.names=F, col.names=T, na="")
 
   # create matrix to be used by MiST
-	print("CONVERTING TO MATRIX")
+	cat("\tCONVERTING TO MATRIX\n")
   matrix_output_file = gsub('.txt','_MAT.txt',output_file)
   df <- preprocess.createMatrix(df, collapse_file, exclusions_file, remove_file, prey_colname, pepcount_colname) #return a list b/c of space padding
-	write.table(df[[1]], matrix_output_file, eol="\n", sep="\t", quote=F, row.names=F, col.names=F, na="")
+	
+  ## TO DO 
+  # Remove Carryover
+  #if(rm_co==1){
+  #	to_remove <- findCarryover(df)
+  #	write.table(to_remove, paste(out_file_temp,"_ToRemove.txt",sep=""), eol="\n", sep="\t", quote=F, row.names=F, col.names=T, na="")
+  #	write.table(df, paste(out_file_temp,"_NoC.txt",sep=""), eol="\n", sep="\t", quote=F, row.names=F, col.names=T, na="")
+  #}
+  
+  write.table(df[[1]], matrix_output_file, eol="\n", sep="\t", quote=F, row.names=F, col.names=F, na="")
   write.table(df[[2]], matrix_output_file, eol="\n", sep="\t", quote=F, row.names=F, col.names=F, na="", append=TRUE)
   
-	# Remove Carryover
-	#if(rm_co==1){
-	#	to_remove <- findCarryover(df)
-	#	write.table(to_remove, paste(out_file_temp,"_ToRemove.txt",sep=""), eol="\n", sep="\t", quote=F, row.names=F, col.names=T, na="")
-	#	write.table(df, paste(out_file_temp,"_NoC.txt",sep=""), eol="\n", sep="\t", quote=F, row.names=F, col.names=T, na="")
-	#}
-  	
+  return(matrix_output_file)
 }
 
-if(is.null(PIPELINE)){
-  
+if(!exists("PIPELINE") || PIPELINE==F){
   option_list <- list(
     make_option(c("-d", "--data_file"),
                 help="data file containing values"), 
@@ -223,11 +220,6 @@ if(is.null(PIPELINE)){
     make_option(c("-r", "--remove_carryover"),
                 help="prints potential carryover to file"),
     make_option(c("-s", "--nupsc_flag"),
-                help="use number of unique peptides or spectral count as matrix values")  
-  )
+                help="use number of unique peptides or spectral count as matrix values")  )
   parsedArgs = parse_args(OptionParser(option_list = option_list), args = commandArgs(trailingOnly=T))
 }
-
-## TODO: make the following code into a unit-test 
-config = yaml.load(string=paste(readLines("tests/APMS_TEST.yml"),collapse='\n'))
-preprocess.main(data_file=config$files$data, keys_file=config$files$keys, output_file=paste(config$files$output_dir,'preprocessed.txt',sep='/'), filter_data=config$preprocess$filter_contaminants, contaminants_file=config$preprocess$contaminants_file, rm_co=config$preprocess$remove_carryover, collapse_file=config$files$collapse, exclusions_file=config$files$specificity_exclusions, remove_file=config$files$remove, prey_colname=config$preprocess$prey_colname, pepcount_colname=config$preprocess$pepcount_colname)

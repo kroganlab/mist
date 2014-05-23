@@ -1,5 +1,6 @@
 #! /usr/bin/Rscript
 suppressMessages(library(optparse))
+source('src/training.R')
 
 # simplify/convert data into workable form
 mist.processMatrix <- function(x){
@@ -156,6 +157,9 @@ mist.main <- function(matrix_file, weights='fixed', w_R=0.30853, w_A=0.00596, w_
   metrics = data.frame(Bait=A$Bait,Prey=A$Prey,Abundance=A$Xscore,Reproducibility=R$Xscore,Specificity=S$Xscore)
   ## only retain non-zero results
   metrics = metrics[metrics$Abundance>0,]
+  ## for debug purposes
+#   output_file <- gsub('.txt', "_MIST_METRICS.txt", matrix_file)
+#   write.table(metrics, output_file, row.names=FALSE, col.names=TRUE, quote=FALSE, sep="\t" )
   
   if(weights == 'fixed'){
     mist_scores = MIST=metrics$Reproducibility*w_R + metrics$Abundance*w_A + metrics$Specificity*w_S
@@ -169,7 +173,7 @@ mist.main <- function(matrix_file, weights='fixed', w_R=0.30853, w_A=0.00596, w_
   }else if(weights == 'training'){
     training_set = read.delim(training_file, header=F, stringsAsFactors=F)
     colnames(training_set) = c('Bait','Prey')
-    mist.train(metrics, training_file)
+    mist.train.main(metrics, training_file)
   }else{
     print(sprintf('unrecognized MIST option: %s',weights))
   }
@@ -188,7 +192,7 @@ mist.main <- function(matrix_file, weights='fixed', w_R=0.30853, w_A=0.00596, w_
   write.table(results_with_samples, output_file, row.names=FALSE, col.names=TRUE, quote=FALSE, sep="\t" )
 }
 
-if(is.null(PIPELINE)){
+if(!exists("PIPELINE") || PIPELINE==F){
   option_list <- list(
     make_option(c("-d", "--data_file"),
                 help="data file containing values"), 
@@ -203,5 +207,6 @@ if(is.null(PIPELINE)){
 }
 
 ## TODO: make the following code into a unit-test 
-config = yaml.load(string=paste(readLines("tests/APMS_TEST.yml"),collapse='\n'))
-mist.main(matrix_file=config$mist$matrix_file, weights=config$mist$weights, w_R=config$mist$reproducibility, w_A=config$mist$abundance, w_S=config$mist$specificity)
+# config = yaml.load(string=paste(readLines("tests/APMS_TEST.yml"),collapse='\n'))
+# config = yaml.load(string=paste(readLines("tests/entero/APMS_ENTERO.yml"),collapse='\n'))
+# mist.main(matrix_file=config$mist$matrix_file, weights=config$mist$weights, w_R=config$mist$reproducibility, w_A=config$mist$abundance, w_S=config$mist$specificity, training_file=config$mist$training_file)
