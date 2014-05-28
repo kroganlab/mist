@@ -112,7 +112,7 @@ preprocess.createMatrix <- function(y, collapse_file, exclusions_file, remove_fi
     if(dim(removals)[1]>0 & y.len == dim(y)[1])
       cat("\tWARNING: REMOVE > 0 BUT NO ENTRIES REMOVED\n")
   }else{
-    cat("Remove file is empty\n")
+    cat("\tRemove file is empty\n")
   }
   
   # Create matrix using either "number of unique peptides" or "spectral count"
@@ -157,11 +157,10 @@ preprocess.createMatrix <- function(y, collapse_file, exclusions_file, remove_fi
 
 # wrapper to filter data and merge with keys
 preprocess.main <- function(data_file, keys_file, output_file, filter_data, contaminants_file, collapse_file, exclusions_file, remove_file, prey_colname, pepcount_colname, rm_co=T){
-  cat("\tReading Files\n")
-  #out_file <- unlist(strsplit(output_file,"\\."))[1]		#get ouput_dir from output_file
-	#out_dir <- paste(out_dir[-length(out_dir)],collapse="/")
-	df <- read.delim(data_file, sep="\t", header=TRUE, stringsAsFactors=FALSE)
-	keys <- read.delim(keys_file, sep="\t", header=F, stringsAsFactors=FALSE)
+  cat("\tREADING FILES\n")
+  keys=tryCatch(read.delim(keys_file, sep="\t", header=F, stringsAsFactors=FALSE), error = function(e) cat(sprintf('\tERROR reading keys from : %s\n',keys_file)))
+  df=tryCatch(read.delim(data_file, sep="\t", header=T, stringsAsFactors=FALSE), error = function(e) cat(sprintf('\tERROR reading data from : %s\n',data_file)))
+	
 	names(keys) = c("id", "BAIT")
 	
   # quality control
