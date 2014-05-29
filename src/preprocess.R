@@ -61,7 +61,7 @@ preprocess.orderExperiments <- function(y){
 # Find potential carryover and print to a file. To be used/appended to final score consolidation sheet
 preprocess.findCarryover <- function(x){
 	# order experiments
-	x <- x[orderExperiments(x),]
+	x <- x[preprocess.orderExperiments(x),]
 	experiments <- unique(x$id)
 	baits <- unique(x$BAIT)
 	tab = table(x$ms_uniprot_ac)	#for prey
@@ -181,21 +181,24 @@ preprocess.main <- function(data_file, keys_file, output_file, filter_data, cont
 	df <- df[preprocess.orderExperiments(df),]  #GENERATES WARNINGS WHEN ID# HAS CHARACTERS IN IT: FIXED
 	write.table(df, output_file, eol="\n", sep="\t", quote=F, row.names=F, col.names=T, na="")
 
+  # Remove Carryover
+  if(rm_co==1){
+    to_remove <- preprocess.findCarryover(df)
+    write.table(to_remove, gsub('.txt','_ToRemove.txt',output_file), eol="\n", sep="\t", quote=F, row.names=F, col.names=T, na="")
+    # remove carryover proteins
+    tmp = merge(df, data.frame(to_remove, here=1), by=c('id', prey_colname), all.x=TRUE) #get index of carryover proteins
+    df <- df[which(is.na(tmp$here)),]
+    output_file = gsub('.txt','_NoC.txt',output_file)
+    write.table(df, output_file, eol="\n", sep="\t", quote=F, row.names=F, col.names=T, na="")
+  }
+  
   # create matrix to be used by MiST
 	cat("\tCONVERTING TO MATRIX\n")
   matrix_output_file = gsub('.txt','_MAT.txt',output_file)
-  df <- preprocess.createMatrix(df, collapse_file, exclusions_file, remove_file, prey_colname, pepcount_colname) #return a list b/c of space padding
+  df_mat <- preprocess.createMatrix(df, collapse_file, exclusions_file, remove_file, prey_colname, pepcount_colname) #return a list b/c of space padding
 	
-  ## TO DO 
-  # Remove Carryover
-  #if(rm_co==1){
-  #	to_remove <- findCarryover(df)
-  #	write.table(to_remove, paste(out_file_temp,"_ToRemove.txt",sep=""), eol="\n", sep="\t", quote=F, row.names=F, col.names=T, na="")
-  #	write.table(df, paste(out_file_temp,"_NoC.txt",sep=""), eol="\n", sep="\t", quote=F, row.names=F, col.names=T, na="")
-  #}
-  
-  write.table(df[[1]], matrix_output_file, eol="\n", sep="\t", quote=F, row.names=F, col.names=F, na="")
-  write.table(df[[2]], matrix_output_file, eol="\n", sep="\t", quote=F, row.names=F, col.names=F, na="", append=TRUE)
+  write.table(df_mat[[1]], matrix_output_file, eol="\n", sep="\t", quote=F, row.names=F, col.names=F, na="")
+  write.table(df_mat[[2]], matrix_output_file, eol="\n", sep="\t", quote=F, row.names=F, col.names=F, na="", append=TRUE)
   
   return(matrix_output_file)
 }
@@ -219,6 +222,6 @@ if(!exists("PIPELINE") || PIPELINE==F){
     make_option(c("-r", "--remove_carryover"),
                 help="prints potential carryover to file"),
     make_option(c("-s", "--nupsc_flag"),
-                help="use number of unique peptides or spectral count as matrix values")  )
+                help="the column name of the quantifiable value used to score data (num unique peptides or spectral count)")  )
   parsedArgs = parse_args(OptionParser(option_list = option_list), args = commandArgs(trailingOnly=T))
 }
