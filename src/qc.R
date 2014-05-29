@@ -54,10 +54,9 @@ qc.ipDists = function(data_matrix, ip_baits, baseName){
   tmp = melt(data_matrix, varnames=c("prey","ip"), value.name="count")
   data_long = merge(tmp, ip_baits, by="ip")
   data_long = data_long[data_long$count > 0,]
-  theme_set(theme_bw(base_size = 12,base_family='Helvetica'))
-  
-  pdf(gsub('.txt','_proteincounts.pdf',baseName), width=10, height=15)
-  print(ggplot(data_long, aes(x=ip)) + geom_bar(stat='bin') + facet_wrap(facets= ~bait, scales='free_x', ncol=5) + theme(axis.text.x = element_text(angle = 90, hjust = 1)))
+  theme_set(theme_bw(base_size = 12,base_family='Helvetica'))  
+  pdf(gsub('.txt','_proteincounts.pdf',baseName), width=10, height=(ceiling(length(unique(data_long$bait))/20)*8) )
+  print(ggplot(data_long, aes(x=ip)) + geom_bar(stat='bin') + facet_wrap(facets= ~bait, scales='free_x', ncol=10) + theme(axis.text.x = element_text(angle = 90, hjust = 1)))
   dev.off()
   
   ## solution with ggplot
