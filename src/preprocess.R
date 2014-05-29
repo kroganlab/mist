@@ -126,6 +126,15 @@ preprocess.createMatrix <- function(y, collapse_file, exclusions_file, remove_fi
 
   # get "Lengths" (molecular weights)
   preys <- unique(y[,c('ms_uniprot_ac','ms_protein_mw')])
+  # handle multiple molecular weights for a prey protein
+  if(length(preys$ms_uniprot_ac) > length(unique(preys$ms_uniprot_ac))){
+    dup_prey = preys$ms_uniprot_ac[which(duplicated(preys$ms_uniprot_ac))]
+    cat(sprintf("\tDIFFERENT MOLECULAR WEIGHTS DETECTED FOR THE FOLLOWING PREY: \n"))
+    cat(sprintf("\t\t%s\n",dup_prey))
+    cat(sprintf("\tUSING MEDIAN WEIGHT PER PROTEIN\n"))
+    preys = aggregate(ms_protein_mw~ms_uniprot_ac, data=preys, median)
+  }
+  
   preys$ms_protein_mw <- floor(preys$ms_protein_mw/110)
   datmat <- merge(preys, datmat, by="ms_uniprot_ac", all.y=T)
   # add other columns for saint. (currently not used)
