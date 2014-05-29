@@ -1,5 +1,4 @@
 files:
-  dir : /Users/everschueren/Projects/HPCKrogan/Scripts/MIST/
   data : tests/small/input/data.txt
   keys : tests/small/input/keys.txt
   remove : tests/small/input/remove.txt
