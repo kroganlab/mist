@@ -39,11 +39,8 @@ getConfig <- function(config_file){
 main <- function(opt){
   config = tryCatch(getConfig(opt$config), error = function(e) { print("!!! Error loading the config file. Please make sure the file follows YAML format."); break} )
   
-  ## set the input dir if defined
-  if(is.null(config$files$dir) || config$files$dir == '') config$files$dir = getwd()
-  
   ##  create an outputdir if it doesn't exist 
-  if(is.null(config$files$output_dir) || config$files$output_dir == '') config$files$output_dir = sprintf('%s/processed/',config$files$dir)
+  if(is.null(config$files$output_dir) || config$files$output_dir == '') config$files$output_dir = sprintf('%s/processed/',getwd())
     
   dir.create(config$files$output_dir, showWarnings = T)
   
