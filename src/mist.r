@@ -57,7 +57,8 @@ mist.getMetrics <- function(x, info){
     if(length(bidx)!=1){
 			y = y/log2(1/length(bidx))
 		}else{
-			y = y*0+1
+			y = y*0  # set reproducibility to 0 if there is only one replicate
+			cat(sprintf("\t!!ONLY ONE REPLICATE USING '%s' AS A BAIT PROTEIN. ASSIGNING REPRODUCIBILITY SCORE OF 0.\n",i))
 		}
 		reproducibility <- cbind(reproducibility, y)
 		colnames(reproducibility)[dim(reproducibility)[2]] <- i
