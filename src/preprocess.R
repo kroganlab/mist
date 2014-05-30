@@ -1,20 +1,16 @@
-suppressMessages(library(Biostrings))
 suppressMessages(library(optparse))
 suppressMessages(library(reshape2))
 
 # filter out contaminants
-preprocess.filterContaminants = function(contaminant_fasta, df) {
-	## use biostrings function to read in fasta file
-	fastaF = as.data.frame(readAAStringSet(filepath = contaminant_fasta))
-	cont_df = data.frame(name = rownames(fastaF), seq = fastaF$x)
-	## split out the first part of the fasta header which should be the identifier -- split could be eithe space or pipe
-	fastaFFirstNames = as.data.frame(apply(cont_df, 1, FUN = function(x) as.character(strsplit(x[1], split = "\\s|\\|")[[1]][1])))
-	## check whether the key is in uniprot format
-	UniprotNames = as.data.frame(fastaFFirstNames[grep("^[A-Z]{1}[0-9]{1}[A-Z,0-9]{4}(\\-1)*", fastaFFirstNames[, 1]), ])
-	colnames(UniprotNames)[1] = "contaminant_key"
-	df_F = df[!(df$ms_uniprot_ac %in% UniprotNames$contaminant_key),]
-	cat(sprintf("\tFILTERED %s CONTAMINANTS\n", nrow(df) - nrow(df_F)))
-	df_F
+preprocess.filterContaminants = function(contaminants_file, df, prey_colname) {
+	# read in contaminants file
+  contaminants <- read.delim(contaminants_file, header=F, stringsAsFactors=F, sep='\t')
+  contaminants <- paste(unlist(contaminants), collapse="|")
+  # find and remove contaminants
+  idx <- grep(contaminants, df[,prey_colname])
+  df <- df[-idx,]
+  cat(sprintf("\tFILTERED %s CONTAMINANTS\n", length(idx)))
+  return(df)
 }
 
 # merge data with keys
@@ -173,8 +169,6 @@ preprocess.main <- function(data_file, keys_file, output_file, filter_data, cont
 	names(keys) = c("id", "BAIT")
 	
   # quality control
-  cat("\tRemoving decoys and prey with 0 unique peptides\n")
-  df <- df[-grep("decoy",df[,4]),]               # remove "decoys"
   ## TO DO GIT ISSUE #1
 	df <- df[which(df[,3] > 0 | is.na(df[,3])),]   # remove ms_unique_pep <= 0
   df <- preprocess.removeDuplicates(df)
@@ -182,7 +176,7 @@ preprocess.main <- function(data_file, keys_file, output_file, filter_data, cont
 	#filter contaminants out
   cat("\tFILTERING COMMON CONTAMINANTS\n")
 	if(filter_data == 1)
-		df <- preprocess.filterContaminants(contaminants_file,df)
+		df <- preprocess.filterContaminants(contaminants_file, df, prey_colname)
 	
 	#merge keys with data
 	cat("\tMERGING KEYS WITH DATA\n")
