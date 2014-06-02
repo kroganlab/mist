@@ -39,6 +39,10 @@ getConfig <- function(config_file){
 main <- function(opt){
   config = tryCatch(getConfig(opt$config), error = function(e) { print("!!! Error loading the config file. Please make sure the file follows YAML format."); break} )
   
+  # replace any spaces in the colname with a "." to match how R reads in headers with spaces. 
+  config$preprocess$contaminants_file <- gsub(' ','.',config$preprocess$contaminants_file)
+  config$preprocess$pepcount_colname <- gsub(' ','.',config$preprocess$pepcount_colname)
+  
   ##  create an outputdir if it doesn't exist 
   if(is.null(config$files$output_dir) || config$files$output_dir == '') config$files$output_dir = sprintf('%s/processed/',getwd())
     
