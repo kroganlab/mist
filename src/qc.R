@@ -74,6 +74,30 @@ qc.ipDists = function(data_matrix, ip_baits, baseName){
   dev.off()
 }
 
+qc.NumUniquePlot <- function(ip_matrix, matrix_file){
+  x <- ip_matrix[,-c(2:4)]
+  baits = data.frame(id=names(x)[-1], bait=unlist(x[1,-1]), stringsAsFactors=F )
+  x <- x[-c(1,2),]
+  x <- melt(x, id=c('a'))
+  x = merge(x, baits, by.x=c('variable'), by.y=c('id'))
+  names(x) = c('ID','Prey', 'value','Bait')
+  x$value = as.numeric(x$value)
+  
+  bait_num = length(unique(x$Bait))
+  plots_per_col = 5
+  plot_width = 15
+  plot_height = ((plot_width/plots_per_col) * ceiling(bait_num/plots_per_col))
+  
+  outfile = gsub(".txt", "_NumUniqPep.pdf", matrix_file)
+  #plot
+  
+  pdf(file=outfile, width=plot_width, height=plot_height)
+    p = ggplot(x, aes(x=factor(ID), y=value))
+    print( p + geom_boxplot() + facet_wrap(~ Bait, scales="free", drop=T, ncol=plots_per_col) + theme(axis.text=element_text(size=9),  axis.text.x=element_text(angle=45, vjust=1))  )
+  dev.off()	
+}
+
+
 qc.main = function(matrix_file, font_scale, cluster=T, ip_dists=T){
   ip_matrix = read.delim(matrix_file, stringsAsFactors=F)
   data_matrix = qc.dataMatrix(ip_matrix)
@@ -84,6 +108,7 @@ qc.main = function(matrix_file, font_scale, cluster=T, ip_dists=T){
   if(ip_dists){
     qc.ipDists(data_matrix, ip_baits, matrix_file)
   }
+  qc.NumUniquePlot(ip_matrix, matrix_file)
 }
 
 if(!exists("PIPELINE") || PIPELINE==F){
