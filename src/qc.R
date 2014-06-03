@@ -67,7 +67,8 @@ qc.ipDists = function(data_matrix, ip_baits, baseName){
   out = by(data = data_long, INDICES = data_long$bait, FUN = function(m) {
     m = droplevels(m)
     #print(m)
-    m = ggplot(m, aes(x=count, colour=ip)) + geom_density(alpha=1, size=1) 
+    bait_title = unique(m$bait)
+    m = ggplot(m, aes(x=count, colour=ip)) + geom_density(alpha=1, size=1) + ggtitle(bait_title)
     ## + theme(legend.title=element_text(unique(m$bait)))
   })
   do.call(grid.arrange, out)
@@ -81,7 +82,8 @@ qc.NumUniquePlot <- function(ip_matrix, matrix_file){
   x <- melt(x, id=c('a'))
   x = merge(x, baits, by.x=c('variable'), by.y=c('id'))
   names(x) = c('ID','Prey', 'value','Bait')
-  x$value = as.numeric(x$value)
+  x$value = as.integer(x$value)
+  x = x[!x$value==0,]
   
   bait_num = length(unique(x$Bait))
   plots_per_col = 5
