@@ -1,2 +1,0 @@
-VIF_1	VIF_1_2
-VIF_2	VIF_1_2
