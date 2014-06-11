@@ -22,9 +22,9 @@ suppressMessages(library(yaml))
 PIPELINE=T
 
 ## load all externeal files
-source("src/preprocess.R")
-source("src/qc.R")
-source("src/mist.R")
+source("src/preprocess.R", chdir=T)
+source("src/qc.R", chdir=T)
+source("src/mist.R", chdir=T)
 
 getConfig <- function(config_file){
   x = readLines(config_file)
