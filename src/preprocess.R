@@ -14,27 +14,27 @@ preprocess.filterContaminants = function(contaminants_file, df, prey_colname) {
 }
 
 # merge data with keys
-preprocess.mergeData <- function(dat, keys){
-  ids = union(unique(dat[,1]), unique(keys[,1]) )
+preprocess.mergeData <- function(dat, keys, id_colname){
+  ids = union(unique(dat[,id_colname]), unique(keys[,id_colname]) )
   cat(paste("\t", length(ids), " TOTAL BAITS DETECTED\n", sep=""))
-  cat(paste("\t", length(unique(dat[,1])), "/", length(ids), " BAITS DETECTED IN DATA FILE\n", sep=""))
-  if(length(unique(dat[,1]))<length(ids)){
+  cat(paste("\t", length(unique(dat[,id_colname])), "/", length(ids), " BAITS DETECTED IN DATA FILE\n", sep=""))
+  if(length(unique(dat[,id_colname]))<length(ids)){
       cat(sprintf("\tMISSING BAITS: %s \n",setdiff(ids, unique(dat[,1]))))
   }
-  cat(paste("\t", length(unique(keys[,1])), "/", length(ids), " BAITS DETECTED IN KEYS FILE\n", sep=""))
-  if(length(unique(keys[,1]))<length(ids)){
-    cat(sprintf("\tMISSING BAITS: %s\n",setdiff(ids, unique(keys[,1]))))
+  cat(paste("\t", length(unique(keys[,id_colname])), "/", length(ids), " BAITS DETECTED IN KEYS FILE\n", sep=""))
+  if(length(unique(keys[,id_colname]))<length(ids)){
+    cat(sprintf("\tMISSING BAITS: %s\n",setdiff(ids, unique(keys[,id_colname]))))
   }
   
-	x <- merge(dat, keys, by="id")
+	x <- merge(dat, keys, by=id_colname)
 	x <- x[,c(dim(x)[2],1:(dim(x)[2]-1))]
 	return(x)
 }
 
 # remove duplicate prey entries per IP. Rare, but happens
-preprocess.removeDuplicates = function(y){
+preprocess.removeDuplicates = function(y, id_colname, prey_colname){
   #find duplicate prey entries per IP
-  idx <- duplicated(y[,c('id','ms_uniprot_ac')])
+  idx <- duplicated(y[,c(id_colname, prey_colname)])
   if(sum(idx)>0){
     cat("\t!! DUPLICATE ID/PREY PAIRS FOUND IN DATA! DUPLICATES REMOVED\n")
     y <- y[!idx,]
@@ -43,9 +43,9 @@ preprocess.removeDuplicates = function(y){
 }
 
 # order the data based on it's id
-preprocess.orderExperiments <- function(y){
-	idnum <- sub("(^[A-Za-z]+|^[A-Za-z]+-)","",y$id)	#strip out numbers
-	idname <- sub("([0-9].*|-[0-9].*)","",y$id)			#strip out id characters
+preprocess.orderExperiments <- function(y, id_colname){
+	idnum <- sub("(^[A-Za-z]+|^[A-Za-z]+-)","",y[,id_colname])	#strip out numbers
+	idname <- sub("([0-9].*|-[0-9].*)","",y[,id_colname])			#strip out id characters
 	tmp = strsplit(idnum,"-")
 	tmp = matrix( unlist(lapply(tmp, function(x) if(length(x)>1){c(x[1], x[2])}else{c(x[1],0)} )), ncol=2, byrow=T)
 	tmp = cbind(idname, tmp)
@@ -55,41 +55,47 @@ preprocess.orderExperiments <- function(y){
 }
 
 # Find potential carryover and print to a file. To be used/appended to final score consolidation sheet
-preprocess.findCarryover <- function(x){
+preprocess.findCarryover <- function(x, id_colname, prey_colname, pepcount_colname){
 	# order experiments
-	x <- x[preprocess.orderExperiments(x),]
-	experiments <- unique(x$id)
+	x <- x[preprocess.orderExperiments(x, id_colname),]
+	experiments <- unique(x[,id_colname])
 	baits <- unique(x$BAIT)
-	tab = table(x$ms_uniprot_ac)	#for prey
+	tab = table(x[,prey_colname])	#for prey
 	preys = as.numeric(tab)
 	names(preys) = names(tab)
 	
-	idx <- which(x$ms_num_unique_pep > 10)	# 0) find which ms_uniq_pep > 10
+	idx <- which(x[,pepcount_colname] > 10)	# 0) find which ms_uniq_pep > 10
 	to_remove <- NULL
 	for( i in idx){
 		# get index of next 4 experiments run after this one
-		idxj <- (which(experiments == x[i,]$id)+1):(which(experiments == x[i,]$id)+4)
-		
-		tmp <- x[which(!is.na(match(x$id, experiments[idxj]))),]		# pull these 4 samples
-		tmp <- tmp[which(tmp$ms_uniprot_ac == x$ms_uniprot_ac[i]),]
-
+		idxj <- (which(experiments == x[i,id_colname])+1):(which(experiments == x[i,id_colname])+4)
+		tmp <- x[which(!is.na(match(x[,id_colname], experiments[idxj]))),]		# pull these 4 samples
+		tmp <- tmp[which(tmp[,prey_colname] == x[i,prey_colname]),]
+    
 		# check all criteria from carryover v1
-		prey = preys[names(preys) == x$ms_uniprot_ac[i]]	#the number of occurrences of this prey in the data set
-		be_gone <- which(tmp$ms_num_unique_pep > 0 & tmp$ms_num_unique_peptide < (x$ms_num_unique_peptide[i]/2) & prey<length(experiments)/3)
+		prey = preys[names(preys) == x[i,prey_colname]]	#the number of occurrences of this prey in the data set
+		be_gone <- which(tmp[,pepcount_colname] > 0 & tmp[,pepcount_colname] < (x[i, pepcount_colname]/2) & prey<length(experiments)/3)
 		#print(be_gone)
 		if(length(be_gone)){
 			#print(tmp[be_gone,1:6])
 			to_remove <- rbind(to_remove, tmp[be_gone,c(1:6)] )
 		}
 	}
-	to_remove = unique(to_remove)	#remove duplicates
-	to_remove <- to_remove[order(to_remove$id,decreasing=FALSE),]	#re-order
-	
+  if(length(to_remove)>0){
+	  to_remove = unique(to_remove)	#remove duplicates
+	  to_remove <- to_remove[order(to_remove[,id_colname],decreasing=FALSE),]	#re-order
+  }
+  return(to_remove)
 }
 
 # create the data matrix that will be used as input by MiST and Saint algorithms
-preprocess.createMatrix <- function(y, collapse_file, exclusions_file, remove_file, prey_colname, pepcount_colname){
-
+preprocess.createMatrix <- function(y, collapse_file, exclusions_file, remove_file, id_colname, prey_colname, pepcount_colname, mw_colname){
+  # Creating consistent names
+  names(y)[grep(paste("^",id_colname,"$",sep=""), names(y))] = "id_colname"
+  names(y)[grep(paste("^",prey_colname,"$",sep=""), names(y))] = "prey_colname"
+  names(y)[grep(paste("^",pepcount_colname,"$",sep=""), names(y))] = "pepcount_colname"
+  names(y)[grep(paste("^",mw_colname,"$",sep=""), names(y))] = "mw_colname"
+  
   # collapse bait names from "collapse" file
   if(file.info(collapse_file)$size >0){
     collapse <- read.delim(collapse_file, sep="\t", header=F, stringsAsFactors=FALSE)
@@ -112,37 +118,39 @@ preprocess.createMatrix <- function(y, collapse_file, exclusions_file, remove_fi
   }
   
   # Create matrix using either "number of unique peptides" or "spectral count"
-  if(!pepcount_colname %in% colnames(y)){
-    cat(sprintf("\tPEPTIDE COUNT COLUMN %s NOT FOUND\n",pepcount_colname))
-  }else if(!prey_colname %in% colnames(y)){
-    cat(sprintf("\tPREY IDENTIFIER COLUMN %s NOT FOUND\n",prey_colname))
+  if(!'pepcount_colname' %in% colnames(y)){
+    cat(sprintf("\tPEPTIDE COUNT COLUMN %s NOT FOUND\n\t\tPLEASE CHECK DATA FILE\n",pepcount_colname))
+    quit()
+  }else if(!'prey_colname' %in% colnames(y)){
+    cat(sprintf("\tPREY IDENTIFIER COLUMN %s NOT FOUND\n\t\tPLEASE CHECK DATA FILE\n",prey_colname))
+    quit()
   }else{
-    datmat <- dcast(y, ms_uniprot_ac ~ id + BAIT, value.var = pepcount_colname, sum)
+    datmat <- dcast(y, prey_colname ~ id_colname + BAIT, value.var = c('pepcount_colname'), sum)
   }
-
+  
   # get "Lengths" (molecular weights)
-  preys <- unique(y[,c('ms_uniprot_ac','ms_protein_mw')])
+  preys <- unique(y[,c('prey_colname', 'mw_colname')])
   # handle multiple molecular weights for a prey protein
-  if(length(preys$ms_uniprot_ac) > length(unique(preys$ms_uniprot_ac))){
-    dup_prey = preys$ms_uniprot_ac[which(duplicated(preys$ms_uniprot_ac))]
+  if(length(preys$prey_colname) > length(unique(preys$prey_colname))){
+    dup_prey = preys$prey_colname[which(duplicated(preys$prey_colname))]
     cat(sprintf("\tDIFFERENT MOLECULAR WEIGHTS DETECTED FOR THE FOLLOWING PREY: \n"))
     cat(sprintf("\t\t%s\n",dup_prey))
     cat(sprintf("\tUSING MEDIAN WEIGHT PER PROTEIN\n"))
-    preys = aggregate(ms_protein_mw~ms_uniprot_ac, data=preys, median)
+    preys = aggregate(mw_colname~prey_colname, data=preys, median)
   }
-  
-  preys$ms_protein_mw <- floor(preys$ms_protein_mw/110)
-  datmat <- merge(preys, datmat, by="ms_uniprot_ac", all.y=T)
+
+  preys$mw_colname <- floor(preys$mw_colname/110)
+  datmat <- merge(preys, datmat, by.x='prey_colname', by.y='prey_colname', all.y=T)
   # add other columns for saint. (currently not used)
   datmat <- cbind(PepAtlas=0, 'PreyType/BaitCov'='N', datmat)
   datmat <- datmat[,c(3,1,4,2,5:dim(datmat)[2])]
-  
+
   # handle exclusions
   if(file.info(exclusions_file)$size>0){
     exclusions <- unique(read.delim(exclusions_file, sep="\t", header=F, stringsAsFactors=FALSE))
-    ips <-unique(y[,c('id','BAIT')])
+    ips <-unique(y[,c('id_colname','BAIT')])
     ips <- merge(ips, exclusions, by.x="BAIT", by.y="V1", all.x=TRUE)[, c(2,1,3)]
-    ips <- ips[order(ips$id, ips$BAIT),]
+    ips <- ips[order(ips$id_colname, ips$BAIT),]
     names(ips)[3] = "PreyType/BaitCov"
     idx <- which(is.na(ips[,3]))
     ips[idx,3] = ips[idx,2]
@@ -161,44 +169,46 @@ preprocess.createMatrix <- function(y, collapse_file, exclusions_file, remove_fi
 }
 
 # wrapper to filter data and merge with keys
-preprocess.main <- function(data_file, keys_file, output_file, filter_data, contaminants_file, collapse_file, exclusions_file, remove_file, prey_colname, pepcount_colname, rm_co=T){
+preprocess.main <- function(data_file, keys_file, output_file, filter_data, contaminants_file, rm_co=T, collapse_file, exclusions_file, remove_file, id_colname, prey_colname, pepcount_colname, mw_colname){
   cat("\tREADING FILES\n")
   keys=tryCatch(read.delim(keys_file, sep="\t", header=F, stringsAsFactors=FALSE), error = function(e) cat(sprintf('\tERROR reading keys from : %s\n',keys_file)))
   df=tryCatch(read.delim(data_file, sep="\t", header=T, stringsAsFactors=FALSE), error = function(e) cat(sprintf('\tERROR reading data from : %s\n',data_file)))
 	
-	names(keys) = c("id", "BAIT")
+	names(keys) = c(id_colname, "BAIT")
 	
   # quality control
   ## TO DO GIT ISSUE #1
 	df <- df[which(df[,3] > 0 | is.na(df[,3])),]   # remove ms_unique_pep <= 0
-  df <- preprocess.removeDuplicates(df)
+  df <- preprocess.removeDuplicates(df, id_colname, prey_colname)
   
 	#filter contaminants out
   cat("\tFILTERING COMMON CONTAMINANTS\n")
 	if(filter_data == 1)
 		df <- preprocess.filterContaminants(contaminants_file, df, prey_colname)
-	
+  
 	#merge keys with data
 	cat("\tMERGING KEYS WITH DATA\n")
-	df <- preprocess.mergeData(df, keys)
-	df <- df[preprocess.orderExperiments(df),]  #GENERATES WARNINGS WHEN ID# HAS CHARACTERS IN IT: FIXED
+	df <- preprocess.mergeData(df, keys, id_colname)
+	df <- df[preprocess.orderExperiments(df, id_colname),]  #GENERATES WARNINGS WHEN ID# HAS CHARACTERS IN IT: FIXED
 	write.table(df, output_file, eol="\n", sep="\t", quote=F, row.names=F, col.names=T, na="")
-
+  
   # Remove Carryover
   if(rm_co==1){
-    to_remove <- preprocess.findCarryover(df)
-    write.table(to_remove, gsub('.txt','_ToRemove.txt',output_file), eol="\n", sep="\t", quote=F, row.names=F, col.names=T, na="")
-    # remove carryover proteins
-    tmp = merge(df, data.frame(to_remove, here=1), by=c('id', prey_colname), all.x=TRUE) #get index of carryover proteins
-    df <- df[which(is.na(tmp$here)),]
-    output_file = gsub('.txt','_NoC.txt',output_file)
-    write.table(df, output_file, eol="\n", sep="\t", quote=F, row.names=F, col.names=T, na="")
+    to_remove <- preprocess.findCarryover(df, id_colname, prey_colname, pepcount_colname)
+    if(length(to_remove)>0){
+      write.table(to_remove, gsub('.txt','_ToRemove.txt',output_file), eol="\n", sep="\t", quote=F, row.names=F, col.names=T, na="")
+      # remove carryover proteins
+      tmp = merge(df, data.frame(to_remove, here=1), by=c('id', prey_colname), all.x=TRUE) #get index of carryover proteins
+      df <- df[which(is.na(tmp$here)),]
+      output_file = gsub('.txt','_NoC.txt',output_file)
+      write.table(df, output_file, eol="\n", sep="\t", quote=F, row.names=F, col.names=T, na="")
+    }
   }
   
   # create matrix to be used by MiST
 	cat("\tCONVERTING TO MATRIX\n")
   matrix_output_file = gsub('.txt','_MAT.txt',output_file)
-  df_mat <- preprocess.createMatrix(df, collapse_file, exclusions_file, remove_file, prey_colname, pepcount_colname) #return a list b/c of space padding
+  df_mat <- preprocess.createMatrix(df, collapse_file, exclusions_file, remove_file, id_colname, prey_colname, pepcount_colname, mw_colname) #return a list b/c of space padding
 	
   write.table(df_mat[[1]], matrix_output_file, eol="\n", sep="\t", quote=F, row.names=F, col.names=F, na="")
   write.table(df_mat[[2]], matrix_output_file, eol="\n", sep="\t", quote=F, row.names=F, col.names=F, na="", append=TRUE)

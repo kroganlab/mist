@@ -22,7 +22,7 @@ qc.dataMatrix = function(input_matrix){
   prey_col_idx = 1
   bait_names = input_matrix[1,data_col_idx:ncol(input_matrix)]
   ip_names = colnames(input_matrix)[data_col_idx:ncol(input_matrix)]
-  prey_names = rownames(input_matrix)[data_row_idx:nrow(input_matrix)]
+  #prey_names = rownames(input_matrix)[data_row_idx:nrow(input_matrix)]
   data_matrix = input_matrix[data_row_idx:nrow(input_matrix),data_col_idx:ncol(input_matrix)]
   rownames(data_matrix) = input_matrix[data_row_idx:nrow(input_matrix),prey_col_idx]
   data.matrix(data_matrix)  
@@ -47,7 +47,7 @@ qc.clusterHeatmap = function(data_matrix, output_file, ip_baits, font_scale){
   colnames(data_matrix_w_names) = do.call(paste, c(ip_baits[,c('bait','ip')], sep = " "))
   cor_matrix = cor(data_matrix_w_names, use="pairwise.complete.obs", method="pearson")
   color_scale = colorRampPalette(brewer.pal(7,"RdBu"))(9)
-  pheatmap(cor_matrix, cluster_rows=T, cluster_cols=T, scale="none",fontsize_row=font_scale,fontsize_col=font_scale, cellwidth=font_scale, cellheight=font_scale, border_color=NA, filename=output_file, color=color_scale, breaks=1:10/10, clustering_distance_rows="correlation", clustering_distance_cols="correlation", treeheight_row=0, treeheight_col=0)  
+  pheatmap(cor_matrix, cluster_rows=T, cluster_cols=T, scale="none",fontsize_row=font_scale,fontsize_col=font_scale, cellwidth=font_scale, cellheight=font_scale, border_color=NA, filename=output_file, color=color_scale, breaks=1:10/10, clustering_distance_rows="correlation", clustering_distance_cols="correlation", treeheight_row=0, treeheight_col=0) 
 }
 
 qc.ipDists = function(data_matrix, ip_baits, baseName){
@@ -102,7 +102,7 @@ qc.NumUniquePlot <- function(ip_matrix, matrix_file){
 
 qc.main = function(matrix_file, font_scale, cluster=T, ip_dists=T){
   ip_matrix = read.delim(matrix_file, stringsAsFactors=F)
-  data_matrix = qc.dataMatrix(ip_matrix)
+  data_matrix = qc.dataMatrix(ip_matrix)  
   ip_baits = qc.getIpToBaits(ip_matrix)
   if(cluster){
     qc.clusterHeatmap(data_matrix, gsub('.txt','.pdf',matrix_file), ip_baits, font_scale)  

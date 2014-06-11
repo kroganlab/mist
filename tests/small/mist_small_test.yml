@@ -7,11 +7,13 @@ files:
   output_dir : tests/small/processed
 preprocess:
   enabled : 1
-  remove_carryover : 0
+  remove_carryover : 1
   filter_contaminants : 1
   contaminants_file : files/contaminants.txt
+  id_colname : id
   prey_colname : ms_uniprot_ac
   pepcount_colname : ms_num_unique_peptide 
+  mw_colname : ms_protein_mw
 qc:
   enabled : 1
   matrix_file : tests/small/processed/preprocessed_MAT.txt

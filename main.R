@@ -40,8 +40,10 @@ main <- function(opt){
   config = tryCatch(getConfig(opt$config), error = function(e) { print("!!! Error loading the config file. Please make sure the file follows YAML format."); break} )
   
   # replace any spaces in the colname with a "." to match how R reads in headers with spaces. 
+  config$preprocess$ip_colname <- gsub(' ','.',config$preprocess$ip_colname)
   config$preprocess$prey_colname <- gsub(' ','.',config$preprocess$prey_colname)
   config$preprocess$pepcount_colname <- gsub(' ','.',config$preprocess$pepcount_colname)
+  config$preprocess$mw_colname <- gsub(' ','.',config$preprocess$mw_colname)
   
   ##  create an outputdir if it doesn't exist 
   if(is.null(config$files$output_dir) || config$files$output_dir == '') config$files$output_dir = sprintf('%s/processed/',getwd())
@@ -51,7 +53,7 @@ main <- function(opt){
   ## main switches between parts of the pipeline
   if(config$preprocess$enabled){
     cat(">> PREPROCESSING FILES\n")
-    matrix_file = preprocess.main(data_file=config$files$data, keys_file=config$files$keys, output_file=paste(config$files$output_dir,'preprocessed.txt',sep='/'), filter_data=config$preprocess$filter_contaminants, contaminants_file=config$preprocess$contaminants_file, rm_co=config$preprocess$remove_carryover, collapse_file=config$files$collapse, exclusions_file=config$files$specificity_exclusions, remove_file=config$files$remove, prey_colname=config$preprocess$prey_colname, pepcount_colname=config$preprocess$pepcount_colname)  
+    matrix_file = preprocess.main(data_file=config$files$data, keys_file=config$files$keys, output_file=paste(config$files$output_dir,'preprocessed.txt',sep='/'), filter_data=config$preprocess$filter_contaminants, contaminants_file=config$preprocess$contaminants_file, rm_co=config$preprocess$remove_carryover, collapse_file=config$files$collapse, exclusions_file=config$files$specificity_exclusions, remove_file=config$files$remove, id_colname=config$preprocess$id_colname, prey_colname=config$preprocess$prey_colname, pepcount_colname=config$preprocess$pepcount_colname, mw_colname=config$preprocess$mw_colname)  
   }
   if(config$qc$enabled){
     cat(">> QUALITY CONTROL\n")
