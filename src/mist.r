@@ -128,9 +128,9 @@ mist.doPCA <- function(R,A,S){
 	
 	#now do some other stuff??
 	scores <- -x$scores[,1]
-	scores <- 1 - (scores - min(scores))/(max(scores)-min(scores))
+	scores <- (scores - min(scores))/(max(scores)-min(scores))
 	scores <- cbind(R=R, A=A$Xscore, S=S$Xscore, MiST=scores)
-	names(scores) = c("Prey", "Bait", "Reproducibility", "Abundance", "Specificity", "MIST_self")
+	names(scores) = c("Bait", "Prey", "Reproducibility", "Abundance", "Specificity", "MIST_self")
 	return(scores)
 }
 
@@ -163,14 +163,10 @@ mist.main <- function(matrix_file, weights='fixed', w_R=0.30853, w_A=0.00596, w_
 #   write.table(metrics, output_file, row.names=FALSE, col.names=TRUE, quote=FALSE, sep="\t" )
   
   if(weights == 'fixed'){
-    mist_scores = MIST=metrics$Reproducibility*w_R + metrics$Abundance*w_A + metrics$Specificity*w_S
+    mist_scores = metrics$Reproducibility*w_R + metrics$Abundance*w_A + metrics$Specificity*w_S
     results = data.frame(metrics, MIST=mist_scores)  
   }else if(weights == 'PCA'){
-    #This is more or less ignored since we always use hiv weights 
-    ## TO DO, currently disabled
-    ## x <- mist.doPCA(R,A,S)
-    print('currently disabled')
-    break
+    results <- mist.doPCA(R,A,S)
   }else if(weights == 'training'){
     training_set = read.delim(training_file, header=F, stringsAsFactors=F)
     colnames(training_set) = c('Bait','Prey')
