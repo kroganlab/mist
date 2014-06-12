@@ -169,13 +169,33 @@ preprocess.createMatrix <- function(y, collapse_file, exclusions_file, remove_fi
   
 }
 
+preprocess.checkNames <- function(x, id_colname, prey_colname, pepcount_colname, mw_colname){
+  if(!sum(grepl(paste("^",id_colname,"$", sep=""), names(x)))){
+    cat(sprintf("\t'%s' NOT FOUND IN COLUMN NAMES. PLEASE CHECK DATA FILE.\n", id_colname))
+    quit()
+  }
+  if(!sum(grepl(paste("^",prey_colname,"$", sep=""), names(x)))){
+    cat(sprintf("\t'%s' NOT FOUND IN COLUMN NAMES. PLEASE CHECK DATA FILE.\n", prey_colname))
+    quit()
+  }
+  if(!sum(grepl(paste("^",pepcount_colname,"$", sep=""), names(x)))){
+    cat(sprintf("\t'%s' NOT FOUND IN COLUMN NAMES. PLEASE CHECK DATA FILE.\n", pepcount_colname))
+    quit()
+  }
+  if(!sum(grepl(paste("^",mw_colname,"$", sep=""), names(x)))){
+    cat(sprintf("\t'%s' NOT FOUND IN COLUMN NAMES. PLEASE CHECK DATA FILE.\n", mw_colname))
+    quit()
+  }  
+}
+
 # wrapper to filter data and merge with keys
 preprocess.main <- function(data_file, keys_file, output_file, filter_data, contaminants_file, rm_co=T, collapse_file, exclusions_file, remove_file, id_colname, prey_colname, pepcount_colname, mw_colname){
   cat("\tREADING FILES\n")
   keys=tryCatch(read.delim(keys_file, sep="\t", header=F, stringsAsFactors=FALSE), error = function(e) cat(sprintf('\tERROR reading keys from : %s\n',keys_file)))
   df=tryCatch(read.delim(data_file, sep="\t", header=T, stringsAsFactors=FALSE), error = function(e) cat(sprintf('\tERROR reading data from : %s\n',data_file)))
+	preprocess.checkNames(df, id_colname, prey_colname, pepcount_colname, mw_colname) 
 	
-	names(keys) = c(id_colname, "BAIT")
+  names(keys) = c(id_colname, "BAIT")
 	
   # quality control
   ## TO DO GIT ISSUE #1
