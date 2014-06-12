@@ -170,22 +170,12 @@ preprocess.createMatrix <- function(y, collapse_file, exclusions_file, remove_fi
 }
 
 preprocess.checkNames <- function(x, id_colname, prey_colname, pepcount_colname, mw_colname){
-  if(!sum(grepl(paste("^",id_colname,"$", sep=""), names(x)))){
-    cat(sprintf("\t'%s' NOT FOUND IN COLUMN NAMES. PLEASE CHECK DATA FILE.\n", id_colname))
+  config_names = c(id_colname, prey_colname, pepcount_colname, mw_colname) 
+  if(!all(config_names %in% names(x))){
+    cat(paste("\t'",config_names[!config_names %in% names(x)], "' NOT FOUND IN COLUMN NAMES. PLEASE CHECK DATA FILE.\n", sep=""))
     quit()
   }
-  if(!sum(grepl(paste("^",prey_colname,"$", sep=""), names(x)))){
-    cat(sprintf("\t'%s' NOT FOUND IN COLUMN NAMES. PLEASE CHECK DATA FILE.\n", prey_colname))
-    quit()
-  }
-  if(!sum(grepl(paste("^",pepcount_colname,"$", sep=""), names(x)))){
-    cat(sprintf("\t'%s' NOT FOUND IN COLUMN NAMES. PLEASE CHECK DATA FILE.\n", pepcount_colname))
-    quit()
-  }
-  if(!sum(grepl(paste("^",mw_colname,"$", sep=""), names(x)))){
-    cat(sprintf("\t'%s' NOT FOUND IN COLUMN NAMES. PLEASE CHECK DATA FILE.\n", mw_colname))
-    quit()
-  }  
+  
 }
 
 # wrapper to filter data and merge with keys
