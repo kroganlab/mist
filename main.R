@@ -21,6 +21,11 @@ suppressMessages(library(yaml))
 
 PIPELINE=T
 
+# set source directory
+args <- commandArgs(trailingOnly = F)  
+scriptPath <- normalizePath(dirname(sub("^--file=", "", args[grep("^--file=", args)])))
+setwd(scriptPath)
+
 ## load all externeal files
 source("src/preprocess.R", chdir=F)
 source("src/qc.R", chdir=F)
