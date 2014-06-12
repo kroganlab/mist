@@ -70,12 +70,17 @@ mist.train.label = function(metrics, training_set){
   metrics
 }
 
-mist.train.main = function(metrics, training_set){
+mist.train.main = function(metrics, training_set, output_file){
   metrics = mist.train.label(metrics, training_set)  
   param_grid = mist.train.getParamGrid()
   prediction_rates = mist.train.gridSearch(metrics, param_grid)
   #plotROC(prediction_rates)
-  write.table(prediction_rates, file="tests/entero/processed/prediction_rates.txt", sep="\t", quote=F, eol="\n")
+  write.table(prediction_rates, file=output_file, sep="\t", quote=F, eol="\n", row.names=F)
+  prediction_rates = prediction_rates[order(prediction_rates$f1, decreasing=T),]
+  
+  prediction_weights = as.numeric(unlist(strsplit(as.character(prediction_rates$ID[1]),"\\|")))
+  prediction_weights = data.frame(R=prediction_weights[1],A=prediction_weights[2],S=prediction_weights[3], stringsAsFactors=F)
+  return(prediction_weights)
 }
 
 # metrics = read.delim('tests/entero/processed/preprocessed_MAT_MIST_METRICS.txt',stringsAsFactors=F)

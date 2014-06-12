@@ -170,7 +170,11 @@ mist.main <- function(matrix_file, weights='fixed', w_R=0.30853, w_A=0.00596, w_
   }else if(weights == 'training'){
     training_set = read.delim(training_file, header=F, stringsAsFactors=F)
     colnames(training_set) = c('Bait','Prey')
-    mist.train.main(metrics, training_file)
+    output_file <- paste(dirname(matrix_file), "prediction_rates.txt", sep="/")
+    training_weights = mist.train.main(metrics, training_set, output_file)
+    cat(sprintf("\tWEIGHTS BASED ON TRAINING SET:\n\t  REPRODUCIBILITY: %s\n\t  ABUNDANCE: %s\n\t  SPECIFICITY: %s\n",training_weights$R, training_weights$A, training_weights$S))
+    mist_scores = metrics$Reproducibility*training_weights$R + metrics$Abundance*training_weights$A + metrics$Specificity*training_weights$S
+    results = data.frame(metrics, MIST=mist_scores)  
   }else{
     print(sprintf('unrecognized MIST option: %s',weights))
   }
