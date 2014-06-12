@@ -156,7 +156,8 @@ preprocess.createMatrix <- function(y, collapse_file, exclusions_file, remove_fi
     ips[idx,3] = ips[idx,2]
   }else{
     cat("\tExclusions file is empty\n")
-    ips <-unique(y[,c('id','BAIT')])
+    ips <-unique(y[,c('id_colname','BAIT')])
+    ips <- ips[order(ips$id_colname),]
     ips$"PreyType/BaitCov" = ips$BAIT
   }
   
