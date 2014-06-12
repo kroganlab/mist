@@ -142,7 +142,7 @@ preprocess.createMatrix <- function(y, collapse_file, exclusions_file, remove_fi
   preys$mw_colname <- floor(preys$mw_colname/110)
   datmat <- merge(preys, datmat, by.x='prey_colname', by.y='prey_colname', all.y=T)
   # add other columns for saint. (currently not used)
-  datmat <- cbind(PepAtlas=0, 'PreyType/BaitCov'='N', datmat)
+  datmat <- cbind(PepAtlas=1, 'PreyType/BaitCov'='N', datmat)
   datmat <- datmat[,c(3,1,4,2,5:dim(datmat)[2])]
 
   # handle exclusions
