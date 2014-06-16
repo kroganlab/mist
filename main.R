@@ -1,6 +1,9 @@
 #! /usr/bin/Rscript --vanilla
 suppressMessages(library(getopt))
 
+#########################
+## MIST MAIN FILE #######
+
 spec = matrix(c(
   'verbose', 'v', 2, "integer", "",
   'help'   , 'h', 0, "logical", "available arguments (this screen)",
@@ -16,7 +19,6 @@ if ( !is.null(opt$help) ) {
   q(status=1);
 }
 
-###############################
 suppressMessages(library(yaml))
 
 PIPELINE=T
