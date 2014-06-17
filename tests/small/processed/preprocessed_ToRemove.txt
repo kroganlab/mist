@@ -1,0 +1,8 @@
+BAIT	id	ms_rank	ms_uniq_pep	ms_uniprot_ac	ms_num_unique_peptide
+GFP	AP-12	[20]		P11498	8
+VIF	AP-5	[230]		P52732	1
+VIF	AP-5	[279]		O75688	1
+VIF	AP-5	[298]		P60660	1
+VIF	AP-6	[237]		P35579	2
+vector	AP-8	[13-4]	1	P68032	6
+vector	AP-8	[13-5]	1	P68133	6
