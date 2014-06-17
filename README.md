@@ -9,10 +9,10 @@ Workstation running any current OS, Unix environment recommended
 
 1.2 Software
 
--R package (http://www.r-project.org)
--R packages: getopt, optparse, reshape2, pheatmap, RcolorBrewer, ggplot2, MESS, yaml
--MiST source code (https://github.com/everschueren/MiST)
--Git (optional) (http://git-scm.com)
+- R package (http://www.r-project.org)
+- R packages: getopt, optparse, reshape2, pheatmap, RcolorBrewer, ggplot2, MESS, yaml
+- MiST source code (https://github.com/everschueren/MiST)
+- Git (optional) (http://git-scm.com)
 
 2. Installation
 
