@@ -21,8 +21,6 @@ annotate.queryFile = function(results, species='HUMAN', uniprot_dir="~/Projects/
       Uniprot = rbind(Uniprot, tmp)  
     }
   }
-  print(colnames(results))
-  print(colnames(Uniprot))
   results_annotated = merge(results, Uniprot, all.x=T, by.x='Prey',by.y='Entry')
   results_annotated
 }
