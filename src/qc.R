@@ -46,7 +46,7 @@ qc.clusterHeatmap = function(data_matrix, output_file, ip_baits, font_scale){
   data_matrix_w_names = data_matrix
   colnames(data_matrix_w_names) = do.call(paste, c(ip_baits[,c('bait','ip')], sep = " "))
   cor_matrix = cor(data_matrix_w_names, use="pairwise.complete.obs", method="pearson")
-  color_scale = colorRampPalette(brewer.pal(7,"RdBu"))(9)
+  color_scale = colorRampPalette(brewer.pal(7,"Blues"))(9)
   pheatmap(cor_matrix, cluster_rows=T, cluster_cols=T, scale="none",fontsize_row=font_scale,fontsize_col=font_scale, cellwidth=font_scale, cellheight=font_scale, border_color=NA, filename=output_file, color=color_scale, breaks=1:10/10, clustering_distance_rows="correlation", clustering_distance_cols="correlation", treeheight_row=0, treeheight_col=0) 
 }
 
@@ -54,25 +54,27 @@ qc.ipDists = function(data_matrix, ip_baits, baseName){
   tmp = melt(data_matrix, varnames=c("prey","ip"), value.name="count")
   data_long = merge(tmp, ip_baits, by="ip")
   data_long = data_long[data_long$count > 0,]
-  theme_set(theme_bw(base_size = 12,base_family='Helvetica'))  
-  pdf(gsub('.txt','_proteincounts.pdf',baseName), width=10, height=(ceiling(length(unique(data_long$bait))/20)*8) )
-  print(ggplot(data_long, aes(x=ip)) + geom_bar(stat='bin') + facet_wrap(facets= ~bait, scales='free_x', ncol=10) + theme(axis.text.x = element_text(angle = 90, hjust = 1)))
-  dev.off()
+  theme_set(theme_bw(base_size = 12,base_family='Helvetica')) 
+  #pdf(gsub('.txt','_proteincounts.pdf',baseName), width=10, height=(ceiling(length(unique(data_long$bait))/20)*8) )
+  #pdf(gsub('.txt','_proteincounts.pdf',baseName), width=10, height=(ceiling(length(unique(data_long$bait))/20)*8))   
+  p = ggplot(data_long, aes(x=ip)) + geom_bar(stat='bin') + facet_wrap(facets= ~bait, scales='free_x', ncol=10) + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+  #dev.off()
+  ggsave(filename=gsub('.txt','_proteincounts.pdf',baseName), plot=p, scale=length(unique(data_long$bait))/10)
   
   ## solution with ggplot
   #ggplot(data_long, aes(x=log2(count), colour=factor(replicate))) + geom_density(alpha=1, size=1) + facet_wrap(facets= ~bait, scales='fixed') 
   
   ## solution to give every plot its separate legend with gridExtra library 
-  pdf(gsub('.txt','_peptidecount_dists.pdf',baseName), width=30, height=30)
-  out = by(data = data_long, INDICES = data_long$bait, FUN = function(m) {
-    m = droplevels(m)
-    #print(m)
-    bait_title = unique(m$bait)
-    m = ggplot(m, aes(x=count, colour=ip)) + geom_density(alpha=1, size=1) + ggtitle(bait_title)
-    ## + theme(legend.title=element_text(unique(m$bait)))
-  })
-  do.call(grid.arrange, out)
-  dev.off()
+#   pdf(gsub('.txt','_peptidecount_dists.pdf',baseName), width=30, height=30)
+#   out = by(data = data_long, INDICES = data_long$bait, FUN = function(m) {
+#     m = droplevels(m)
+#     #print(m)
+#     bait_title = unique(m$bait)
+#     m = ggplot(m, aes(x=count, colour=ip)) + geom_density(alpha=1, size=1) + ggtitle(bait_title)
+#     ## + theme(legend.title=element_text(unique(m$bait)))
+#   })
+#   do.call(grid.arrange, out)
+#   dev.off()
 }
 
 qc.NumUniquePlot <- function(ip_matrix, matrix_file){
@@ -109,8 +111,8 @@ qc.main = function(matrix_file, font_scale, cluster=T, ip_dists=T){
   }
   if(ip_dists){
     qc.ipDists(data_matrix, ip_baits, matrix_file)
+    qc.NumUniquePlot(ip_matrix, matrix_file)
   }
-  qc.NumUniquePlot(ip_matrix, matrix_file)
 }
 
 if(!exists("PIPELINE") || PIPELINE==F){
