@@ -8,8 +8,8 @@ library(MESS)
 #######################################
 
 ## parameter grid 
-mist.train.getParamGrid = function(precision=0.1) {
-  param_weight_detail = seq(from=0,to=1, by=precision)
+mist.train.getParamGrid = function(steps=0.1) {
+  param_weight_detail = seq(from=0,to=1, by=steps)
   param_grid = expand.grid(param_weight_detail, param_weight_detail, param_weight_detail)
   param_grid = param_grid[apply(param_grid[,1:3],1,sum) == 1,]
   colnames(param_grid) = c("Reproducibility","Abundance","Specificity")
@@ -35,7 +35,8 @@ mist.train.getPredictionRates = function(prediction, thresholds = seq(from=0,to=
     neg_false = c(neg_false, nf)
     neg_true = c(neg_true, nrow(neg_predicted)-nf)
   }
-  res = data.frame(ID=ID, threshold=thresholds, tpr=pos_true/pos, fpr=pos_false/neg, specificity=neg_true/neg, precision=pos_true/(pos_true+pos_false), fdr=pos_false/(pos_false+pos_true), acc=(pos_true+neg_true)/(pos+neg), f1=(2*pos_true)/((2*pos_true)+pos_false+neg_false), total_pos=pos_true+pos_false)
+  res = data.frame(R_A_S=ID, threshold=thresholds, tpr=pos_true/pos, fpr=pos_false/neg, specificity=neg_true/neg, precision=pos_true/(pos_true+pos_false), fdr=pos_false/(pos_false+pos_true), acc=(pos_true+neg_true)/(pos+neg), f1=(2*pos_true)/((2*pos_true)+pos_false+neg_false), total_pos=pos_true+pos_false)
+  res
 }
 
 # 
@@ -70,15 +71,15 @@ mist.train.label = function(metrics, training_set){
   metrics
 }
 
-mist.train.main = function(metrics, training_set, output_file){
+mist.train.main = function(metrics, training_set, output_file, training_steps=0.1){
   metrics = mist.train.label(metrics, training_set)  
-  param_grid = mist.train.getParamGrid()
+  param_grid = mist.train.getParamGrid(training_steps)
   prediction_rates = mist.train.gridSearch(metrics, param_grid)
   #plotROC(prediction_rates)
   write.table(prediction_rates, file=output_file, sep="\t", quote=F, eol="\n", row.names=F)
   prediction_rates = prediction_rates[order(prediction_rates$f1, decreasing=T),]
   
-  prediction_weights = as.numeric(unlist(strsplit(as.character(prediction_rates$ID[1]),"\\|")))
+  prediction_weights = as.numeric(unlist(strsplit(as.character(prediction_rates$R_A_S[1]),"\\|")))
   prediction_weights = data.frame(R=prediction_weights[1],A=prediction_weights[2],S=prediction_weights[3], stringsAsFactors=F)
   return(prediction_weights)
 }
