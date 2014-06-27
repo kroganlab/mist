@@ -187,10 +187,7 @@ mist.main <- function(matrix_file, weights='fixed', w_R=0.30853, w_A=0.00596, w_
   }
   
   results_with_samples = merge(results, ip_occurences, by=c('Bait','Prey'))
-  
-  #write out results
-  output_file <- gsub('.txt', "_MIST.txt", matrix_file)
-  write.table(results_with_samples, output_file, row.names=FALSE, col.names=TRUE, quote=FALSE, sep="\t" )
+  results_with_samples
 }
 
 if(!exists("PIPELINE") || PIPELINE==F){
