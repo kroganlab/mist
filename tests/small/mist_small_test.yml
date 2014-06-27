@@ -29,3 +29,7 @@ mist:
   reproducibility : 0.30853 
   specificity : 0.68551
   abundance : 0.00596
+annotate:
+  enabled : 1
+  species : HUMAN
+  uniprot_dir : /Users/everschueren/Projects/HPCKrogan/Scripts/MIST/files/
