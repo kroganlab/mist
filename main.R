@@ -26,12 +26,13 @@ PIPELINE=T
 # set source directory
 args <- commandArgs(trailingOnly = F)  
 scriptPath <- normalizePath(dirname(sub("^--file=", "", args[grep("^--file=", args)])))
-setwd(scriptPath)
+#setwd(scriptPath)
 
 ## load all externeal files
-source("src/preprocess.R", chdir=F)
-source("src/qc.R", chdir=F)
-source("src/mist.R", chdir=F)
+source(paste(scriptPath,"/src/preprocess.R",sep=""), chdir=F)
+source(paste(scriptPath,"/src/qc.R",sep=""), chdir=F)
+source(paste(scriptPath,"/src/mist.R",sep=""), chdir=F)
+source(paste(scriptPath,'/src/training.R',sep=""))
 
 getConfig <- function(config_file){
   x = readLines(config_file)
