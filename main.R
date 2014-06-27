@@ -75,14 +75,15 @@ main <- function(opt){
     if(!config$preprocess$enabled){ ## use previous data matrix instead of the one from pre-processing call 
       matrix_file = config$mist$matrix_file
     }
-    results = mist.main(matrix_file=matrix_file, weights=config$mist$weights, w_R=config$mist$reproducibility, w_A=config$mist$abundance, w_S=config$mist$specificity, training_file=config$mist$training_file)
-  }
-  output_file = gsub('.txt', "_MIST.txt", matrix_file)
-  if(config$annotate$enabled){
-    cat(">> ANNOTATION\n")
+    results = mist.main(matrix_file=matrix_file, weights=config$mist$weights, w_R=config$mist$reproducibility, w_A=config$mist$abundance, w_S=config$mist$specificity, training_file=config$mist$training_file, training_steps=config$mist$training_steps)
+    output_file = gsub('.txt', "_MIST.txt", matrix_file)
+    if(config$annotate$enabled){
+      cat(">> ANNOTATION\n")
       results = annotate.queryFile(results, config$annotate$species, config$annotate$uniprot_dir)
+    }
+    write.table(results, output_file, row.names=FALSE, col.names=TRUE, quote=FALSE, sep="\t")
   }
-  write.table(results, output_file, row.names=FALSE, col.names=TRUE, quote=FALSE, sep="\t")
+  
 }
 
 if(!exists('DEBUG') || DEBUG==F) main(opt)
