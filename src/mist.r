@@ -144,7 +144,7 @@ mist.getSampleOccurences = function(m3d_norm, info){
 #scores <- cbind(scores, mist_hiv=scores$Repro*0.30853 + scores$Abundance*0.00596 + scores$Specificity*0.68551 )
 ##############################################################################################################
 
-mist.main <- function(matrix_file, weights='fixed', w_R=0.30853, w_A=0.00596, w_S=0.68551, training_file){
+mist.main <- function(matrix_file, weights='fixed', w_R=0.30853, w_A=0.00596, w_S=0.68551, training_file, training_steps=0.1){
   dat <- read.delim(matrix_file, sep="\t", header=TRUE, stringsAsFactors=FALSE)
   dat <- mist.processMatrix(dat)
   m3d_norm <- mist.getM3D_normalized(dat[[1]])
@@ -171,7 +171,7 @@ mist.main <- function(matrix_file, weights='fixed', w_R=0.30853, w_A=0.00596, w_
     training_set = read.delim(training_file, header=F, stringsAsFactors=F)
     colnames(training_set) = c('Bait','Prey')
     output_file <- paste(dirname(matrix_file), "prediction_rates.txt", sep="/")
-    training_weights = mist.train.main(metrics, training_set, output_file)
+    training_weights = mist.train.main(metrics, training_set, output_file, training_steps)
     cat(sprintf("\tWEIGHTS BASED ON TRAINING SET:\n\t  REPRODUCIBILITY: %s\n\t  ABUNDANCE: %s\n\t  SPECIFICITY: %s\n",training_weights$R, training_weights$A, training_weights$S))
     mist_scores = metrics$Reproducibility*training_weights$R + metrics$Abundance*training_weights$A + metrics$Specificity*training_weights$S
     results = data.frame(metrics, MIST=mist_scores)  
@@ -187,10 +187,7 @@ mist.main <- function(matrix_file, weights='fixed', w_R=0.30853, w_A=0.00596, w_
   }
   
   results_with_samples = merge(results, ip_occurences, by=c('Bait','Prey'))
-  
-  #write out results
-  output_file <- gsub('.txt', "_MIST.txt", matrix_file)
-  write.table(results_with_samples, output_file, row.names=FALSE, col.names=TRUE, quote=FALSE, sep="\t" )
+  results_with_samples
 }
 
 if(!exists("PIPELINE") || PIPELINE==F){
