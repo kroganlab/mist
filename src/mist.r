@@ -1,6 +1,6 @@
 #! /usr/bin/Rscript
 suppressMessages(library(optparse))
-source('src/training.R')
+#source('src/training.R') 
 
 # simplify/convert data into workable form
 mist.processMatrix <- function(x){
