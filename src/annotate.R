@@ -1,3 +1,4 @@
+#! /usr/bin/Rscript --vanilla
 suppressMessages(library(biomaRt))
 
 annotate.queryBMUniprot = function(results, attributes=c("accession","name","gene_name","protein_name","organism")){

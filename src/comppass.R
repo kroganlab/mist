@@ -332,6 +332,7 @@ Comppass.main = function(data_file, output_file, resampling=F){
   print("WRITING")
   ## write out
   write.table(summary, file=output_file, row.names=F, col.names=T, eol="\n", sep="\t", quote=F) 
+  return(summary)
 }
 
 

@@ -32,6 +32,7 @@ source(paste(scriptPath,"/src/preprocess.R",sep=""))
 source(paste(scriptPath,"/src/qc.R",sep=""))
 source(paste(scriptPath,"/src/mist.R",sep=""))
 source(paste(scriptPath,'/src/training.R',sep=""))
+source(paste(scriptPath,'/src/annotate.R',sep=""))
 
 getConfig <- function(config_file){
   x = readLines(config_file)
@@ -74,13 +75,13 @@ main <- function(opt){
     if(!config$preprocess$enabled){ ## use previous data matrix instead of the one from pre-processing call 
       matrix_file = config$mist$matrix_file
     }
-    results = mist.main(matrix_file=matrix_file, weights=config$mist$weights, w_R=config$mist$reproducibility, w_A=config$mist$abundance, w_S=config$mist$specificity, training_file=config$mist$training_file, training_steps=config$mist$training_steps)
+    mist.results = mist.main(matrix_file=matrix_file, weights=config$mist$weights, w_R=config$mist$reproducibility, w_A=config$mist$abundance, w_S=config$mist$specificity, training_file=config$mist$training_file, training_steps=config$mist$training_steps)
     output_file = gsub('.txt', "_MIST.txt", matrix_file)
-    if(config$annotate$enabled){
-      cat(">> ANNOTATION\n")
-      results = annotate.queryFile(results, config$annotate$species, config$annotate$uniprot_dir)
-    }
-    write.table(results, output_file, row.names=FALSE, col.names=TRUE, quote=FALSE, sep="\t")
+#     if(config$annotate$enabled){
+#       cat(">> ANNOTATION\n")
+#       results = annotate.queryFile(results, config$annotate$species, config$annotate$uniprot_dir)
+#     }
+    write.table(mist.results, output_file, row.names=FALSE, col.names=TRUE, quote=FALSE, sep="\t")
   }
   # ~~ COMPPASS ~~
   if(config$comppass$enabled){
@@ -90,8 +91,47 @@ main <- function(opt){
     output_dir = paste(config$files$output_dir,'COMPPASS/',sep='/')
     dir.create(output_dir, showWarnings = T)  #create Comppass directory    
     output_file = paste(output_dir, gsub('.txt', '_COMPPASS.txt', basename(config$files$data)),sep='/')
-    Comppass.main(matrix_file, output_file, resampling=F) 
+    comppass.results = Comppass.main(matrix_file, output_file, resampling=F)
+    comppass.results = comppass.results[,c('Bait','Prey','WD')]
   }
+
+  # Combine all results
+  if( exists('mist.results') & exists('comppass.results') ){
+    results = merge(mist.results, comppass.results[,c('Bait','Prey','WD')], by=c('Bait','Prey'))
+  }else if( exists('mist.results') ){
+    results = mist.results
+  }else if( exists('comppass.results') ){
+    results = comppass.results
+  }
+
+  # ~~ Annotations ~~
+  if(config$annotate$enabled){
+    cat(">> ANNOTATING\n")
+    if( !exists('results')  ){  # no results calculated this time
+      output_dir = config$files$output_dir
+      if( file.exists(paste(output_dir, "/COMPPASS/", gsub('.txt', '_COMPPASS.txt', basename(config$files$data)),sep='/')) & file.exists(gsub('.txt', "_MIST.txt", matrix_file)) ){
+        cat("\tLOADING MIST SCORES\n")
+        mist.results = read.delim(gsub('.txt', "_MIST.txt", matrix_file), sep = '\t', header=T, stringsAsFactors=F)
+        cat("\tLOADING COMPPASS SCORES\n")
+        comppass.results = read.delim( paste(output_dir, "/COMPPASS/", gsub('.txt', '_COMPPASS.txt', basename(config$files$data)),sep='/'), sep="\t", header=T, stringsAsFactors=F)
+        results = merge(mist.results, comppass.results[,c('Bait','Prey','WD')], by=c('Bait','Prey'))
+      }else if( file.exists(paste(output_dir, "/COMPPASS/", gsub('.txt', '_COMPPASS.txt', basename(config$files$data)),sep='/')) ){
+        cat("\tLOADING COMPPASS SCORES\n")
+        results = read.delim(paste(output_dir, "/COMPPASS/", gsub('.txt', '_COMPPASS.txt', basename(config$files$data)),sep='/'), sep="\t", header=T, stringsAsFactors=F)
+      }else if(file.exists(gsub('.txt', "_MIST.txt", matrix_file))){
+        cat("\tLOADING MIST SCORES\n")
+        results = mist.results = read.delim(gsub('.txt', "_MIST.txt", matrix_file), sep = '\t', header=T, stringsAsFactors=F)
+      }else{
+        stop("NO SCORES TO ANNOTATE. PLEASE ENABLE ONE OF THE SCORING OPTIONS.")  
+      }
+    }
+    results = annotate.queryFile(results, config$annotate$species, config$annotate$uniprot_dir)
+  }
+
+  # Print out all scores
+  output_file = gsub('.txt', "_ALLSCORES.txt", matrix_file)
+  write.table(results, output_file, row.names=FALSE, col.names=TRUE, quote=FALSE, sep="\t")
+  
   # ~~ Enrichment ~~
   if(config$enrichment$enabled){  # Enrichment analysis
     source(paste(scriptPath,'/src/Enrichment.R',sep=""))    
@@ -105,6 +145,7 @@ main <- function(opt){
     #if(config$enrichment$)
   
   }
+
   
   
 }
