@@ -25,6 +25,8 @@ qc.dataMatrix = function(input_matrix){
   #prey_names = rownames(input_matrix)[data_row_idx:nrow(input_matrix)]
   data_matrix = input_matrix[data_row_idx:nrow(input_matrix),data_col_idx:ncol(input_matrix)]
   rownames(data_matrix) = input_matrix[data_row_idx:nrow(input_matrix),prey_col_idx]
+  if(any(data_matrix==""))
+    stop("BLANK ENTRIES FOUND IN THE DATA MATRIX.")
   data.matrix(data_matrix)  
 }
 
