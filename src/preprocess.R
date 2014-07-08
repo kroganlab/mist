@@ -148,6 +148,17 @@ preprocess.createMatrix <- function(y, collapse_file, exclusions_file, remove_fi
   # handle exclusions
   if(file.info(exclusions_file)$size>0){
     exclusions <- unique(read.delim(exclusions_file, sep="\t", header=F, stringsAsFactors=FALSE))
+    
+    # if multiple instances of bait in col1, combine all of the col2 exclusions
+    if( any(duplicated(exclusions[,1])) ){
+      idx<-which(duplicated(exclusions[,1]))
+      for(i in unique(exclusions[idx,1])){
+        idx2 = which(exclusions[,1]==i)
+        exclusions[idx2,2] = paste(exclusions[idx2,2], collapse="|")
+      }
+      exclusions = unique(exclusions)
+    }
+    
     ips <-unique(y[,c('id_colname','BAIT')])
     ips <- merge(ips, exclusions, by.x="BAIT", by.y="V1", all.x=TRUE)[, c(2,1,3)]
     ips <- ips[order(ips$id_colname, ips$BAIT),]
