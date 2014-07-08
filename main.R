@@ -132,18 +132,31 @@ main <- function(opt){
   output_file = gsub('.txt', "_ALLSCORES.txt", matrix_file)
   write.table(results, output_file, row.names=FALSE, col.names=TRUE, quote=FALSE, sep="\t")
   
-  # ~~ Enrichment ~~
+  # ~~ Enrichment (ORIGINAL) ~~
   if(config$enrichment$enabled){  # Enrichment analysis
-    source(paste(scriptPath,'/src/Enrichment.R',sep=""))    
-    data_file = output_file = paste(config$files$output_dir,'preprocessed.txt',sep='/')
-    output_dir = output_file=paste(config$files$output_dir,'Enrichment',sep='/')
-    dir.create(file.path(output_dir))
-    config$preprocess$prey_colname
-    Enrichment.main(data_file, output_dir, config$preprocess$prey_colname, grouped=T, enrichment_p_cutoff=config$enrichment$enrichment_p_cutoff, id_type=config$enrichment$id_type)
-  
+    cat(">> ENERICHMENT\n")
+    output_dir = paste(config$files$output_dir,'Enrichment',sep='/')
+    # create Enrichment directory for files
+    if(file.exists(output_dir))
+      dir.create(file.path(output_dir))
+    
+    # GO HyperG enrichment analysis
+    if(config$enrichment$hyperg){
+      cat("    CALCULATING HYPERG PROBABILITIES\n")
+      source(paste(scriptPath,'/src/Enrichment.R',sep=""))    
+      data_file = paste(config$files$output_dir,'preprocessed.txt',sep='/')
+      Enrichment.main(data_file, output_dir, config$preprocess$prey_colname, grouped=T, enrichment_p_cutoff=config$enrichment$enrichment_p_cutoff, id_type=config$enrichment$id_type)
+    }
+    
     # Perform over representation analysis based on re-sampling
-    #if(config$enrichment$)
-  
+    if(config$enrichment$resampling){
+      cat("    CALCULATING RESAMPLED PROBABILITIES\n")
+      source(paste(scriptPath,'/src/overRepresented.R',sep=""))
+      data_file = output_file
+      overRepresented.main(data_file, output_dir, config$annotate$uniprot_dir, score_name="MIST", prey_name="Prey", bait_name="Bait")
+      
+    }
+    
   }
 
   

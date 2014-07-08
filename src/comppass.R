@@ -290,15 +290,15 @@ Comppass.ResampledPvalues = function(data_tmp, cnames, summary){
 }
 
 Comppass.main = function(data_file, output_file, resampling=F){
-  print("READING")
+  cat("\tREADING\n")
   data = read.delim(data_file,  stringsAsFactors=F, header=T,skip=1, check.names=FALSE)
-  print("CONVERTING")
+  cat("\tCONVERTING\n")
   ## convert into intermediate format
   data_tmp = Comppass.cleanMatrix(data)
   cnames = Comppass.cnames(data)
   data_long = Comppass.convertMatrix(data_tmp, cnames)
   
-  print("COMPUTING STATS")
+  cat("\tCOMPUTING STATS\n")
   ## make stats table
   stats_tab = Comppass.StatsTable(data_long)
   
@@ -308,7 +308,7 @@ Comppass.main = function(data_file, output_file, resampling=F){
   ## make specificity table
   speci_tab = Comppass.SpeciTable(stats_tab)
   
-  print("COMPUTING SCORES")
+  cat("\tCOMPUTING SCORES\n")
   ## compute scores
   Z = Comppass.Z(stats_tab)
   S = Comppass.S(stats_tab, speci_tab)
@@ -318,7 +318,7 @@ Comppass.main = function(data_file, output_file, resampling=F){
   num_reps = as.matrix(table(as.character(names(data)[-c(1:4)])))
   WDv2 = Comppass.WDv2(stats_tab, speci_tab, repro_tab, num_reps)
   
-  print("SUMMARIZING")
+  cat("\tSUMMARIZING\n")
   ## compile all scores
   summary = Comppass.Summary(stats_tab, Z, S, D, WD, WDv2)
   
@@ -329,7 +329,7 @@ Comppass.main = function(data_file, output_file, resampling=F){
     
     summary = cbind(summary, P)
   }
-  print("WRITING")
+  cat("\tWRITING\n")
   ## write out
   write.table(summary, file=output_file, row.names=F, col.names=T, eol="\n", sep="\t", quote=F) 
   return(summary)

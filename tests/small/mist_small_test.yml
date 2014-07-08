@@ -36,6 +36,8 @@ annotate:
   species : HUMAN
   uniprot_dir : /Users/jvondollen/projects/mist/files/
 enrichment:
-  enabled : 0
+  enabled : 1
+  hyperg : 0
+  resampling : 1
   enrichment_p_cutoff : 1
   id_type : UNIPROT
