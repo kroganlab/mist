@@ -24,16 +24,14 @@ suppressMessages(library(yaml))
 PIPELINE=T
 
 # set source directory
-args <- commandArgs(trailingOnly = F)  
+args <- commandArgs(trailingOnly = F) 
 scriptPath <- normalizePath(dirname(sub("^--file=", "", args[grep("^--file=", args)])))
-#setwd(scriptPath)
 
 ## load all externeal files
-source(paste(scriptPath,"/src/preprocess.R",sep=""), chdir=F)
-source(paste(scriptPath,"/src/qc.R",sep=""), chdir=F)
-source(paste(scriptPath,"/src/mist.R",sep=""), chdir=F)
+source(paste(scriptPath,"/src/preprocess.R",sep=""))
+source(paste(scriptPath,"/src/qc.R",sep=""))
+source(paste(scriptPath,"/src/mist.R",sep=""))
 source(paste(scriptPath,'/src/training.R',sep=""))
-source(paste(scriptPath,'/src/annotate.R',sep=""))
 
 getConfig <- function(config_file){
   x = readLines(config_file)
@@ -84,6 +82,30 @@ main <- function(opt){
     }
     write.table(results, output_file, row.names=FALSE, col.names=TRUE, quote=FALSE, sep="\t")
   }
+  # ~~ COMPPASS ~~
+  if(config$comppass$enabled){
+    cat(">> COMPPASS\n")
+    source(paste(scriptPath,'/src/comppass.R',sep=""))
+    #data_file = paste(config$files$output_dir,'preprocessed.txt',sep='/')
+    output_dir = paste(config$files$output_dir,'COMPPASS/',sep='/')
+    dir.create(output_dir, showWarnings = T)  #create Comppass directory    
+    output_file = paste(output_dir, gsub('.txt', '_COMPPASS.txt', basename(config$files$data)),sep='/')
+    Comppass.main(matrix_file, output_file, resampling=F) 
+  }
+  # ~~ Enrichment ~~
+  if(config$enrichment$enabled){  # Enrichment analysis
+    source(paste(scriptPath,'/src/Enrichment.R',sep=""))    
+    data_file = output_file = paste(config$files$output_dir,'preprocessed.txt',sep='/')
+    output_dir = output_file=paste(config$files$output_dir,'Enrichment',sep='/')
+    dir.create(file.path(output_dir))
+    config$preprocess$prey_colname
+    Enrichment.main(data_file, output_dir, config$preprocess$prey_colname, grouped=T, enrichment_p_cutoff=config$enrichment$enrichment_p_cutoff, id_type=config$enrichment$id_type)
+  
+    # Perform over representation analysis based on re-sampling
+    #if(config$enrichment$)
+  
+  }
+  
   
 }
 
