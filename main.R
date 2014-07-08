@@ -32,6 +32,7 @@ source(paste(scriptPath,"/src/preprocess.R",sep=""))
 source(paste(scriptPath,"/src/qc.R",sep=""))
 source(paste(scriptPath,"/src/mist.R",sep=""))
 source(paste(scriptPath,'/src/training.R',sep=""))
+source(paste(scriptPath,'/src/annotate.R',sep=""))
 
 getConfig <- function(config_file){
   x = readLines(config_file)
