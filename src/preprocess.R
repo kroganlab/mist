@@ -9,21 +9,21 @@ preprocess.filterContaminants = function(contaminants_file, df, prey_colname) {
   # find and remove contaminants
   idx <- grep(contaminants, df[,prey_colname])
   df <- df[-idx,]
-  cat(sprintf("\tFILTERED %s CONTAMINANTS\n", length(idx)))
+  cat(sprintf("\t  FILTERED %s CONTAMINANTS\n", length(idx)))
   return(df)
 }
 
 # merge data with keys
 preprocess.mergeData <- function(dat, keys, id_colname){
   ids = union(unique(dat[,id_colname]), unique(keys[,id_colname]) )
-  cat(paste("\t", length(ids), " TOTAL BAITS DETECTED\n", sep=""))
-  cat(paste("\t", length(unique(dat[,id_colname])), "/", length(ids), " BAITS DETECTED IN DATA FILE\n", sep=""))
+  cat(paste("\t  ", length(ids), " TOTAL BAITS DETECTED\n", sep=""))
+  cat(paste("\t  ", length(unique(dat[,id_colname])), "/", length(ids), " BAITS DETECTED IN DATA FILE\n", sep=""))
   if(length(unique(dat[,id_colname]))<length(ids)){
-      cat(sprintf("\tMISSING BAITS: %s \n",setdiff(ids, unique(dat[,1]))))
+      cat(sprintf("\t  MISSING BAITS: %s \n",setdiff(ids, unique(dat[,1]))))
   }
-  cat(paste("\t", length(unique(keys[,id_colname])), "/", length(ids), " BAITS DETECTED IN KEYS FILE\n", sep=""))
+  cat(paste("\t  ", length(unique(keys[,id_colname])), "/", length(ids), " BAITS DETECTED IN KEYS FILE\n", sep=""))
   if(length(unique(keys[,id_colname]))<length(ids)){
-    cat(sprintf("\tMISSING BAITS: %s\n",setdiff(ids, unique(keys[,id_colname]))))
+    cat(sprintf("\t  MISSING BAITS: %s\n",setdiff(ids, unique(keys[,id_colname]))))
   }
   
 	x <- merge(dat, keys, by=id_colname)
@@ -103,7 +103,7 @@ preprocess.createMatrix <- function(y, collapse_file, exclusions_file, remove_fi
       y$BAIT[y$BAIT == collapse[i,1]] = collapse[i,2]
     }
   }else{
-    cat("\tCollapse file is empty\n")
+    cat("\tCOLLAPSE FILE IS EMPTY\n")
   }
   
   # remove the "remove" ip's
@@ -139,12 +139,12 @@ preprocess.createMatrix <- function(y, collapse_file, exclusions_file, remove_fi
     preys = aggregate(mw_colname~prey_colname, data=preys, median)
   }
 
-  preys$mw_colname <- floor(preys$mw_colname/110)
+  preys$mw_colname <- floor(as.numeric(preys$mw_colname)/110)
   datmat <- merge(preys, datmat, by.x='prey_colname', by.y='prey_colname', all.y=T)
   # add other columns for saint. (currently not used)
   datmat <- cbind(PepAtlas=1, 'PreyType/BaitCov'='N', datmat)
   datmat <- datmat[,c(3,1,4,2,5:dim(datmat)[2])]
-
+  
   # handle exclusions
   if(file.info(exclusions_file)$size>0){
     exclusions <- unique(read.delim(exclusions_file, sep="\t", header=F, stringsAsFactors=FALSE))
