@@ -61,7 +61,7 @@ qc.ipDists = function(data_matrix, ip_baits, baseName){
   #pdf(gsub('.txt','_proteincounts.pdf',baseName), width=10, height=(ceiling(length(unique(data_long$bait))/20)*8))   
   p = ggplot(data_long, aes(x=ip)) + geom_bar(stat='bin') + facet_wrap(facets= ~bait, scales='free_x', ncol=10) + theme(axis.text.x = element_text(angle = 90, hjust = 1))
   #dev.off()
-  ggsave(filename=gsub('.txt','_proteincounts.pdf',baseName), plot=p, scale=length(unique(data_long$bait))/10)
+  ggsave(filename=gsub('.txt','_proteincounts.pdf',baseName), plot=p, scale=length(unique(data_long$bait))/10, limitsize=FALSE)
   
   ## solution with ggplot
   #ggplot(data_long, aes(x=log2(count), colour=factor(replicate))) + geom_density(alpha=1, size=1) + facet_wrap(facets= ~bait, scales='fixed') 
