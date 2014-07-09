@@ -104,27 +104,30 @@ main <- function(opt){
     results = comppass.results
   }
 
+  # If no results calculated this time
+  if( !exists('results')  ){  
+    output_dir = config$files$output_dir
+    if( file.exists(paste(output_dir, "/COMPPASS/", gsub('.txt', '_COMPPASS.txt', basename(config$files$data)),sep='/')) & file.exists(gsub('.txt', "_MIST.txt", matrix_file)) ){
+      cat("\tLOADING MIST SCORES\n")
+      mist.results = read.delim(gsub('.txt', "_MIST.txt", matrix_file), sep = '\t', header=T, stringsAsFactors=F)
+      cat("\tLOADING COMPPASS SCORES\n")
+      comppass.results = read.delim( paste(output_dir, "/COMPPASS/", gsub('.txt', '_COMPPASS.txt', basename(config$files$data)),sep='/'), sep="\t", header=T, stringsAsFactors=F)
+      results = merge(mist.results, comppass.results[,c('Bait','Prey','WD')], by=c('Bait','Prey'))
+    }else if( file.exists(paste(output_dir, "/COMPPASS/", gsub('.txt', '_COMPPASS.txt', basename(config$files$data)),sep='/')) ){
+      cat("\tLOADING COMPPASS SCORES\n")
+      results = read.delim(paste(output_dir, "/COMPPASS/", gsub('.txt', '_COMPPASS.txt', basename(config$files$data)),sep='/'), sep="\t", header=T, stringsAsFactors=F)
+    }else if(file.exists(gsub('.txt', "_MIST.txt", matrix_file))){
+      cat("\tLOADING MIST SCORES\n")
+      results = mist.results = read.delim(gsub('.txt', "_MIST.txt", matrix_file), sep = '\t', header=T, stringsAsFactors=F)
+    }else{
+      stop("NO SCORES FOUND. PLEASE ENABLE ONE OF THE SCORING OPTIONS.")  
+    }
+  }
+
   # ~~ Annotations ~~
   if(config$annotate$enabled){
     cat(">> ANNOTATING\n")
-    if( !exists('results')  ){  # no results calculated this time
-      output_dir = config$files$output_dir
-      if( file.exists(paste(output_dir, "/COMPPASS/", gsub('.txt', '_COMPPASS.txt', basename(config$files$data)),sep='/')) & file.exists(gsub('.txt', "_MIST.txt", matrix_file)) ){
-        cat("\tLOADING MIST SCORES\n")
-        mist.results = read.delim(gsub('.txt', "_MIST.txt", matrix_file), sep = '\t', header=T, stringsAsFactors=F)
-        cat("\tLOADING COMPPASS SCORES\n")
-        comppass.results = read.delim( paste(output_dir, "/COMPPASS/", gsub('.txt', '_COMPPASS.txt', basename(config$files$data)),sep='/'), sep="\t", header=T, stringsAsFactors=F)
-        results = merge(mist.results, comppass.results[,c('Bait','Prey','WD')], by=c('Bait','Prey'))
-      }else if( file.exists(paste(output_dir, "/COMPPASS/", gsub('.txt', '_COMPPASS.txt', basename(config$files$data)),sep='/')) ){
-        cat("\tLOADING COMPPASS SCORES\n")
-        results = read.delim(paste(output_dir, "/COMPPASS/", gsub('.txt', '_COMPPASS.txt', basename(config$files$data)),sep='/'), sep="\t", header=T, stringsAsFactors=F)
-      }else if(file.exists(gsub('.txt', "_MIST.txt", matrix_file))){
-        cat("\tLOADING MIST SCORES\n")
-        results = mist.results = read.delim(gsub('.txt', "_MIST.txt", matrix_file), sep = '\t', header=T, stringsAsFactors=F)
-      }else{
-        stop("NO SCORES TO ANNOTATE. PLEASE ENABLE ONE OF THE SCORING OPTIONS.")  
-      }
-    }
+    
     results = annotate.queryFile(results, config$annotate$species, config$annotate$uniprot_dir)
   }
 
@@ -135,10 +138,11 @@ main <- function(opt){
   # ~~ Enrichment (ORIGINAL) ~~
   if(config$enrichment$enabled){  # Enrichment analysis
     cat(">> ENERICHMENT\n")
-    output_dir = paste(config$files$output_dir,'Enrichment',sep='/')
+    output_dir = paste(config$files$output_dir,'/Enrichment/',sep='/')
+    
     # create Enrichment directory for files
-    if(file.exists(output_dir))
-      dir.create(file.path(output_dir))
+    if(!file.exists(output_dir))
+      dir.create(output_dir)
     
     # GO HyperG enrichment analysis
     if(config$enrichment$hyperg){
