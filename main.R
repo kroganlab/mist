@@ -34,6 +34,7 @@ source(paste(scriptPath,"/src/mist.R",sep=""))
 source(paste(scriptPath,'/src/training.R',sep=""))
 source(paste(scriptPath,'/src/annotate.R',sep=""))
 
+
 getConfig <- function(config_file){
   x = readLines(config_file)
   x = x[x!=""]  #remove \n\n cases (blank Lines)
@@ -137,7 +138,7 @@ main <- function(opt){
   
   # ~~ Enrichment (ORIGINAL) ~~
   if(config$enrichment$enabled){  # Enrichment analysis
-    cat(">> ENERICHMENT\n")
+    cat(">> ENRICHMENT\n")
     output_dir = paste(config$files$output_dir,'/Enrichment/',sep='/')
     
     # create Enrichment directory for files
@@ -157,7 +158,7 @@ main <- function(opt){
       cat("    CALCULATING RESAMPLED PROBABILITIES\n")
       source(paste(scriptPath,'/src/overRepresented.R',sep=""))
       data_file = output_file
-      overRepresented.main(data_file, output_dir, config$annotate$uniprot_dir, score_name="MIST", prey_name="Prey", bait_name="Bait")
+      overRepresented.main(data_file, output_dir, config$annotate$uniprot_dir, score_name="MIST", prey_name="Prey", bait_name="Bait", score_threshold=config$enrichment$score_threshold)
       
     }
     

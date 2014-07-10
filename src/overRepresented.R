@@ -193,10 +193,8 @@ resample.main = function(termsNscores, out_file, termid, heat_style="Q", FILTER_
 }
 
 
-
-
 # Get GO, PFAM, and KEGG terms for preys
-overRepresented.main <- function(score_file, output_dir, uniprot_dir="/files/", score_name="MIST_hiv", prey_name="Prey", bait_name="Bait"){
+overRepresented.main <- function(score_file, output_dir, uniprot_dir="/files/", score_name="MIST_hiv", prey_name="Prey", bait_name="Bait", score_threshold=0.7){
   cat("\tMapping GO Terms...\n")
   scores = data.table(read.delim(score_file, sep="\t", stringsAsFactors=F))
   setnames(scores, prey_name, "UNIPROT")  # change colnames to use merge.data.table for speeeeed
@@ -257,7 +255,6 @@ overRepresented.main <- function(score_file, output_dir, uniprot_dir="/files/", 
   cat("\tCalculating over-representation of proteins:\n")
   ## CONFIGURATION
   ITERATIONS = 1000                                                                                                     # <----
-  SCORE_T = 0.7                                                                                                         # <----
   #databases =                                                                                                          # <----
   HEAT_STYLE="Q" ##HEAT_STYLE="SCORE"
   P_T = 0.05
@@ -268,31 +265,31 @@ overRepresented.main <- function(score_file, output_dir, uniprot_dir="/files/", 
   # GO-CC Resampling
   cat("\t  GO-CC terms... ")
   out_file = paste(output_dir,"GO_CC_Terms_enriched.txt", sep="")
-  term_groups_selected_w = resample.main(termsNscores=goCC, out_file=out_file, termid=termid, heat_style="Q", FILTER_HICONF=T, AGGREGATE_FUN=mean, SCORE_T=0.7, score_name, ITERATIONS, P_T, BREAKS, LABELS)
+  term_groups_selected_w = resample.main(termsNscores=goCC, out_file=out_file, termid=termid, heat_style="Q", FILTER_HICONF=T, AGGREGATE_FUN=mean, SCORE_T= score_threshold, score_name, ITERATIONS, P_T, BREAKS, LABELS)
   write.table(term_groups_selected_w, file=gsub('.txt','_heatmap.txt',out_file), eol='\n', sep='\t',quote=F, col.names=NA, row.names=T)
 
   # GO-BP Resampling
   cat("\t  GO-BP terms... ")
   out_file = paste(output_dir,"GO_BP_Terms_enriched.txt", sep="")
-  term_groups_selected_w = resample.main(termsNscores=goBP, out_file=out_file, termid=termid, heat_style="Q", FILTER_HICONF=T, AGGREGATE_FUN=mean, SCORE_T=0.7, score_name, ITERATIONS, P_T, BREAKS, LABELS)
+  term_groups_selected_w = resample.main(termsNscores=goBP, out_file=out_file, termid=termid, heat_style="Q", FILTER_HICONF=T, AGGREGATE_FUN=mean, SCORE_T=score_threshold, score_name, ITERATIONS, P_T, BREAKS, LABELS)
   write.table(term_groups_selected_w, file=gsub('.txt','_heatmap.txt',out_file), eol='\n', sep='\t',quote=F, col.names=NA, row.names=T)
   
   # GO-MF Resampling
   cat("\t  GO-MF terms... ")
   out_file = paste(output_dir,"GO_MF_Terms_enriched.txt", sep="")
-  term_groups_selected_w = resample.main(termsNscores=goMF, out_file=out_file, termid=termid, heat_style="Q", FILTER_HICONF=T, AGGREGATE_FUN=mean, SCORE_T=0.7, score_name, ITERATIONS, P_T, BREAKS, LABELS)
+  term_groups_selected_w = resample.main(termsNscores=goMF, out_file=out_file, termid=termid, heat_style="Q", FILTER_HICONF=T, AGGREGATE_FUN=mean, SCORE_T=score_threshold, score_name, ITERATIONS, P_T, BREAKS, LABELS)
   write.table(term_groups_selected_w, file=gsub('.txt','_heatmap.txt',out_file), eol='\n', sep='\t',quote=F, col.names=NA, row.names=T)
   
   # PFAM Resampling
   cat("\t  PFAM terms... ")
   out_file = paste(output_dir,"PFAM_Terms_enriched.txt", sep="")
-  term_groups_selected_w = resample.main(termsNscores=pfam, out_file=out_file, termid=termid, heat_style="Q", FILTER_HICONF=T, AGGREGATE_FUN=mean, SCORE_T=0.7, score_name, ITERATIONS, P_T, BREAKS, LABELS)
+  term_groups_selected_w = resample.main(termsNscores=pfam, out_file=out_file, termid=termid, heat_style="Q", FILTER_HICONF=T, AGGREGATE_FUN=mean, SCORE_T=score_threshold, score_name, ITERATIONS, P_T, BREAKS, LABELS)
   write.table(term_groups_selected_w, file=gsub('.txt','_heatmap.txt',out_file), eol='\n', sep='\t',quote=F, col.names=NA, row.names=T)
   
   # KEGG Resampling
   cat("\t  KEGG terms... ")
   out_file = paste(output_dir,"KEGG_Terms_enriched.txt", sep="")
-  term_groups_selected_w = resample.main(termsNscores=kegg, out_file=out_file, termid=termid, heat_style="Q", FILTER_HICONF=T, AGGREGATE_FUN=mean, SCORE_T=0.7, score_name, ITERATIONS, P_T, BREAKS, LABELS)
+  term_groups_selected_w = resample.main(termsNscores=kegg, out_file=out_file, termid=termid, heat_style="Q", FILTER_HICONF=T, AGGREGATE_FUN=mean, SCORE_T=score_threshold, score_name, ITERATIONS, P_T, BREAKS, LABELS)
   write.table(term_groups_selected_w, file=gsub('.txt','_heatmap.txt',out_file), eol='\n', sep='\t',quote=F, col.names=NA, row.names=T)
   
   
