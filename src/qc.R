@@ -94,12 +94,12 @@ qc.NumUniquePlot <- function(ip_matrix, matrix_file){
   plot_width = 15
   plot_height = ((plot_width/plots_per_col) * ceiling(bait_num/plots_per_col))
   
-  outfile = gsub(".txt", "_NumUniqPep.pdf", matrix_file)
+  outfile = gsub(".txt", "_PepCount_Distributions.pdf", matrix_file)
   #plot
   
   pdf(file=outfile, width=plot_width, height=plot_height)
     p = ggplot(x, aes(x=factor(ID), y=value))
-    print( p + geom_boxplot() + facet_wrap(~ Bait, scales="free", drop=T, ncol=plots_per_col) + theme(axis.text=element_text(size=9),  axis.text.x=element_text(angle=45, vjust=1))  )
+    print( p + geom_boxplot() + facet_wrap(~ Bait, scales="free", drop=T, ncol=plots_per_col) + theme(axis.text=element_text(size=9),  axis.text.x=element_text(angle=45, hjust=1))  )
   dev.off()	
 }
 
