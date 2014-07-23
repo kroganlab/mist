@@ -197,12 +197,15 @@ preprocess.main <- function(data_file, keys_file, output_file, filter_data, cont
 	preprocess.checkNames(df, id_colname, prey_colname, pepcount_colname, mw_colname) 
 	
   names(keys) = c(id_colname, "BAIT")
-	
   # quality control
   ## TO DO GIT ISSUE #1
-	df <- df[which(df[,3] > 0 | is.na(df[,3])),]   # remove ms_unique_pep <= 0
+  if(class(df[,3])=="character"){
+    cat("\t!!! CHARACTERS FOUND IN unique_pep COLUMN. CONVERTING TO NUMERIC.")
+    df[,3] = as.numeric(df[,3])
+  }
+	df <- df[which(df[,3] > 0 | is.na(df[,3]) | df[,3] == ""),]   # remove ms_unique_pep <= 0
   df <- preprocess.removeDuplicates(df, id_colname, prey_colname)
-  
+  print(dim(df))
 	#filter contaminants out
   cat("\tFILTERING COMMON CONTAMINANTS\n")
 	if(filter_data == 1)

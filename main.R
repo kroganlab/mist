@@ -133,6 +133,8 @@ main <- function(opt){
 
   # Print out all scores
   output_file = gsub('.txt', "_ALLSCORES.txt", matrix_file)
+  results = data.frame(results[,2:1], results[,3:dim(results)[2]], stringsAsFactors=F)
+  results = results[order(results[,1]),]
   write.table(results, output_file, row.names=FALSE, col.names=TRUE, quote=FALSE, sep="\t")
   
   # ~~ Enrichment (ORIGINAL) ~~
