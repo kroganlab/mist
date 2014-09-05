@@ -44,7 +44,7 @@ preprocess.removeDuplicates = function(y, id_colname, prey_colname){
 
 # order the data based on it's id
 preprocess.orderExperiments <- function(y, id_colname){
-	idnum <- sub("(^[A-Za-z]+|^[A-Za-z]+-)","",y[,id_colname])	#strip out numbers
+	idnum <- sub("(^[A-Za-z_]+|^[A-Za-z_]+-)","",y[,id_colname])	#strip out numbers
 	idname <- sub("([0-9].*|-[0-9].*)","",y[,id_colname])			#strip out id characters
 	tmp = strsplit(idnum,"-")
 	tmp = matrix( unlist(lapply(tmp, function(x) if(length(x)>1){c(x[1], x[2])}else{c(x[1],0)} )), ncol=2, byrow=T)
@@ -75,9 +75,7 @@ preprocess.findCarryover <- function(x, id_colname, prey_colname, pepcount_colna
 		# check all criteria from carryover v1
 		prey = preys[names(preys) == x[i,prey_colname]]	#the number of occurrences of this prey in the data set
 		be_gone <- which(tmp[,pepcount_colname] > 0 & tmp[,pepcount_colname] < (x[i, pepcount_colname]/2) & prey<length(experiments)/3)
-		#print(be_gone)
 		if(length(be_gone)){
-			#print(tmp[be_gone,1:6])
 			to_remove <- rbind(to_remove, tmp[be_gone,c(1:6)] )
 		}
 	}
@@ -200,12 +198,12 @@ preprocess.main <- function(data_file, keys_file, output_file, filter_data, cont
   # quality control
   ## TO DO GIT ISSUE #1
   if(class(df[,3])=="character"){
-    cat("\t!!! CHARACTERS FOUND IN unique_pep COLUMN. CONVERTING TO NUMERIC.")
+    cat("\t!!! CHARACTERS FOUND IN unique_pep COLUMN. CONVERTING TO NUMERIC.\n")
     df[,3] = as.numeric(df[,3])
   }
 	df <- df[which(df[,3] > 0 | is.na(df[,3]) | df[,3] == ""),]   # remove ms_unique_pep <= 0
   df <- preprocess.removeDuplicates(df, id_colname, prey_colname)
-  print(dim(df))
+  
 	#filter contaminants out
   cat("\tFILTERING COMMON CONTAMINANTS\n")
 	if(filter_data == 1)
@@ -223,8 +221,9 @@ preprocess.main <- function(data_file, keys_file, output_file, filter_data, cont
     if(length(to_remove)>0){
       write.table(to_remove, gsub('.txt','_ToRemove.txt',output_file), eol="\n", sep="\t", quote=F, row.names=F, col.names=T, na="")
       # remove carryover proteins
-      tmp = merge(df, data.frame(to_remove, here=1), by=c('id', prey_colname), all.x=TRUE) #get index of carryover proteins
-      df <- df[which(is.na(tmp$here)),]
+      tmp = merge(df, data.frame(to_remove[,c('id', prey_colname)], here=1), by=c('id', prey_colname), all.x=TRUE) #get index of carryover proteins
+      df <- tmp[which(is.na(tmp$here)),-dim(tmp)[2]]  # remove the 'here' column
+      df <- df[preprocess.orderExperiments(df, id_colname),]
       output_file = gsub('.txt','_NoC.txt',output_file)
       write.table(df, output_file, eol="\n", sep="\t", quote=F, row.names=F, col.names=T, na="")
     }
