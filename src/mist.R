@@ -110,14 +110,12 @@ mist.getSpecificity <- function(abundance, info){
 
 # vectorize the metrics while keeping the names straight
 mist.vectorize <- function(x){
-	temp <- c()
-	for(i in 1:dim(x)[2] ){
-		tmp <- as.data.frame(cbind(x[,i], colnames(x)[i], names(x[,i])), stringsAsFactors=FALSE)
-		temp <- rbind(temp,tmp)
-	}
-	names(temp) <- c("Xscore", "Bait", "Prey")
+  temp = melt(x, factorsAsStrings=TRUE)
+	names(temp) <- c("Prey", "Bait", "Xscore")
 	temp$Xscore <- as.numeric(temp$Xscore)
-	return(temp[,c(3,2,1)])
+  temp$Bait <- as.character(temp$Bait)
+  temp$Prey <- as.character(temp$Prey)
+	return(temp[,c('Bait','Prey','Xscore')])
 }
 
 # Perform PCA analysis AS DONE IN MIST
