@@ -195,6 +195,8 @@ preprocess.main <- function(data_file, keys_file, output_file, filter_data, cont
 	preprocess.checkNames(df, id_colname, prey_colname, pepcount_colname, mw_colname) 
 	
   names(keys) = c(id_colname, "BAIT")
+  keys$BAIT = gsub(' ', '', keys$BAIT)
+  
   # quality control
   ## TO DO GIT ISSUE #1
   if(class(df[,3])=="character"){
