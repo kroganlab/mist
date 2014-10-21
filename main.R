@@ -78,46 +78,14 @@ main <- function(opt){
     }
     mist.results = mist.main(matrix_file=matrix_file, weights=config$mist$weights, w_R=config$mist$reproducibility, w_A=config$mist$abundance, w_S=config$mist$specificity, training_file=config$mist$training_file, training_steps=config$mist$training_steps)
     output_file = gsub('.txt', "_MIST.txt", matrix_file)
-#     if(config$annotate$enabled){
-#       cat(">> ANNOTATION\n")
-#       results = annotate.queryFile(results, config$annotate$species, config$annotate$uniprot_dir)
-#     }
     write.table(mist.results, output_file, row.names=FALSE, col.names=TRUE, quote=FALSE, sep="\t")
   }
-  # ~~ COMPPASS ~~
-  if(config$comppass$enabled){
-    cat(">> COMPPASS\n")
-    source(paste(scriptPath,'/src/comppass.R',sep=""))
-    #data_file = paste(config$files$output_dir,'preprocessed.txt',sep='/')
-    output_dir = paste(config$files$output_dir,'COMPPASS/',sep='/')
-    dir.create(output_dir, showWarnings = T)  #create Comppass directory    
-    output_file = paste(output_dir, gsub('.txt', '_COMPPASS.txt', basename(config$files$data)),sep='/')
-    comppass.results = Comppass.main(matrix_file, output_file, resampling=F)
-    comppass.results = comppass.results[,c('Bait','Prey','WD')]
-  }
-
-  # Combine all results
-  if( exists('mist.results') & exists('comppass.results') ){
-    results = merge(mist.results, comppass.results[,c('Bait','Prey','WD')], by=c('Bait','Prey'))
-  }else if( exists('mist.results') ){
-    results = mist.results
-  }else if( exists('comppass.results') ){
-    results = comppass.results
-  }
-
+  results = mist.results
+  
   # If no results calculated this time
   if( !exists('results')  ){  
     output_dir = config$files$output_dir
-    if( file.exists(paste(output_dir, "/COMPPASS/", gsub('.txt', '_COMPPASS.txt', basename(config$files$data)),sep='/')) & file.exists(gsub('.txt', "_MIST.txt", matrix_file)) ){
-      cat("\tLOADING MIST SCORES\n")
-      mist.results = read.delim(gsub('.txt', "_MIST.txt", matrix_file), sep = '\t', header=T, stringsAsFactors=F)
-      cat("\tLOADING COMPPASS SCORES\n")
-      comppass.results = read.delim( paste(output_dir, "/COMPPASS/", gsub('.txt', '_COMPPASS.txt', basename(config$files$data)),sep='/'), sep="\t", header=T, stringsAsFactors=F)
-      results = merge(mist.results, comppass.results[,c('Bait','Prey','WD')], by=c('Bait','Prey'))
-    }else if( file.exists(paste(output_dir, "/COMPPASS/", gsub('.txt', '_COMPPASS.txt', basename(config$files$data)),sep='/')) ){
-      cat("\tLOADING COMPPASS SCORES\n")
-      results = read.delim(paste(output_dir, "/COMPPASS/", gsub('.txt', '_COMPPASS.txt', basename(config$files$data)),sep='/'), sep="\t", header=T, stringsAsFactors=F)
-    }else if(file.exists(gsub('.txt', "_MIST.txt", matrix_file))){
+    if(file.exists(gsub('.txt', "_MIST.txt", matrix_file))){
       cat("\tLOADING MIST SCORES\n")
       results = mist.results = read.delim(gsub('.txt', "_MIST.txt", matrix_file), sep = '\t', header=T, stringsAsFactors=F)
     }else{
@@ -137,37 +105,8 @@ main <- function(opt){
   results = data.frame(results[,2:1], results[,3:dim(results)[2]], stringsAsFactors=F)
   results = results[order(results[,1]),]
   write.table(results, output_file, row.names=FALSE, col.names=TRUE, quote=FALSE, sep="\t")
-  
-  # ~~ Enrichment (ORIGINAL) ~~
-  if(config$enrichment$enabled){  # Enrichment analysis
-    cat(">> ENRICHMENT\n")
-    output_dir = paste(config$files$output_dir,'/Enrichment/',sep='/')
-    
-    # create Enrichment directory for files
-    if(!file.exists(output_dir))
-      dir.create(output_dir)
-    
-    # GO HyperG enrichment analysis
-    if(config$enrichment$hyperg){
-      cat("    CALCULATING HYPERG PROBABILITIES\n")
-      source(paste(scriptPath,'/src/Enrichment.R',sep=""))    
-      data_file = paste(config$files$output_dir,'preprocessed.txt',sep='/')
-      Enrichment.main(data_file, output_dir, config$preprocess$prey_colname, grouped=T, enrichment_p_cutoff=config$enrichment$enrichment_p_cutoff, id_type=config$enrichment$id_type)
-    }
-    
-    # Perform over representation analysis based on re-sampling
-    if(config$enrichment$resampling){
-      cat("    CALCULATING RESAMPLED PROBABILITIES\n")
-      source(paste(scriptPath,'/src/overRepresented.R',sep=""))
-      data_file = output_file
-      overRepresented.main(data_file, output_dir, config$annotate$uniprot_dir, score_name="MIST", prey_name="Prey", bait_name="Bait", score_threshold=config$enrichment$score_threshold)
-      
-    }
-    
-  }
 
-  
-  
+
 }
 
 if(!exists('DEBUG') || DEBUG==F) main(opt)
