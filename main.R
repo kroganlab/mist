@@ -80,33 +80,8 @@ main <- function(opt){
     output_file = gsub('.txt', "_MIST.txt", matrix_file)
     write.table(mist.results, output_file, row.names=FALSE, col.names=TRUE, quote=FALSE, sep="\t")
   }
-  results = mist.results
-  
-  # If no results calculated this time
-  if( !exists('results')  ){  
-    output_dir = config$files$output_dir
-    if(file.exists(gsub('.txt', "_MIST.txt", matrix_file))){
-      cat("\tLOADING MIST SCORES\n")
-      results = mist.results = read.delim(gsub('.txt', "_MIST.txt", matrix_file), sep = '\t', header=T, stringsAsFactors=F)
-    }else{
-      stop("NO SCORES FOUND. PLEASE ENABLE ONE OF THE SCORING OPTIONS.")  
-    }
-  }
 
-  # ~~ Annotations ~~
-  if(config$annotate$enabled){
-    cat(">> ANNOTATING\n")
-    
-    results = annotate.queryFile(results, config$annotate$species, config$annotate$uniprot_dir)
-  }
-
-  # Print out all scores
-  output_file = gsub('.txt', "_ALLSCORES.txt", matrix_file)
-  results = data.frame(results[,2:1], results[,3:dim(results)[2]], stringsAsFactors=F)
-  results = results[order(results[,1]),]
-  write.table(results, output_file, row.names=FALSE, col.names=TRUE, quote=FALSE, sep="\t")
-
-
+  cat(">> SCORING FINISHED!\n")
 }
 
 if(!exists('DEBUG') || DEBUG==F) main(opt)
