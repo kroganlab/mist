@@ -1,41 +1,31 @@
 files:
-  data : /data1/soft/HPC/MIST/tests/small/input/data.txt
-  keys : /data1/soft/HPC/MIST/tests/small/input/keys.txt
-  remove : /data1/soft/HPC/MIST/tests/small/input/remove.txt
-  collapse : /data1/soft/HPC/MIST/tests/small/input/collapse.txt
-  specificity_exclusions : /data1/soft/HPC/MIST/tests/small/input/specificity_exclusions.txt
-  output_dir : /data1/soft/HPC/MIST/tests/small/processed
+  data : tests/small/input/data.txt
+  keys : tests/small/input/keys.txt
+  remove : tests/small/input/remove.txt
+  collapse : tests/small/input/collapse.txt
+  specificity_exclusions : tests/small/input/specificity_exclusions.txt
+  output_dir : tests/small/processed
 preprocess:
   enabled : 1
   remove_carryover : 1
   filter_contaminants : 1
-  contaminants_file : /data1/soft/HPC/MIST/files/contaminants.txt
+  contaminants_file : files/contaminants.txt
   id_colname : id
   prey_colname : ms_uniprot_ac
   pepcount_colname : ms_num_unique_peptide 
   mw_colname : ms_protein_mw
 qc:
   enabled : 1
-  matrix_file : /data1/soft/HPC/MIST/tests/small/processed/preprocessed_MAT.txt
+  matrix_file : 
   cluster : 1
   cluster_font_scale : 5
   ip_distributions: 1
 mist:
   enabled : 1
-  matrix_file : /data1/soft/HPC/MIST/tests/small/processed/preprocessed_MAT.txt
+  matrix_file : 
   # possible weights values: trained (using training_file), PCA, fixed (using weights below)
   weights : fixed 
   training_file : 
   reproducibility : 0.30853 
   specificity : 0.68551
   abundance : 0.00596
-comppass:
-  enabled : 1
-annotate:
-  enabled : 1
-  species : HUMAN
-  uniprot_dir : /data1/soft/HPC/MIST/files/
-enrichment:
-  enabled : 0
-  enrichment_p_cutoff : 1
-  id_type : UNIPROT
