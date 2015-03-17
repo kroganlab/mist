@@ -223,7 +223,7 @@ preprocess.main <- function(data_file, keys_file, output_file, filter_data, cont
     if(length(to_remove)>0){
       write.table(to_remove, gsub('.txt','_ToRemove.txt',output_file), eol="\n", sep="\t", quote=F, row.names=F, col.names=T, na="")
       # remove carryover proteins
-      tmp = merge(df, data.frame(to_remove[,c('id', prey_colname)], here=1), by=c('id', prey_colname), all.x=TRUE) #get index of carryover proteins
+       tmp = merge(df, data.frame(to_remove[,c(id_colname, prey_colname)], here=1), by=c(id_colname, prey_colname), all.x=TRUE) #get index of carryover proteins
       df <- tmp[which(is.na(tmp$here)),-dim(tmp)[2]]  # remove the 'here' column
       df <- df[preprocess.orderExperiments(df, id_colname),]
       output_file = gsub('.txt','_NoC.txt',output_file)
