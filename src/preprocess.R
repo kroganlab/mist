@@ -190,8 +190,8 @@ preprocess.checkNames <- function(x, id_colname, prey_colname, pepcount_colname,
 # wrapper to filter data and merge with keys
 preprocess.main <- function(data_file, keys_file, output_file, filter_data, contaminants_file, rm_co=T, collapse_file, exclusions_file, remove_file, id_colname, prey_colname, pepcount_colname, mw_colname){
   cat("\tREADING FILES\n")
-  keys=tryCatch(read.delim(keys_file, sep="\t", header=F, stringsAsFactors=FALSE), error = function(e) cat(sprintf('\tERROR reading keys from : %s\n',keys_file)))
-  df=tryCatch(read.delim(data_file, sep="\t", header=T, stringsAsFactors=FALSE), error = function(e) cat(sprintf('\tERROR reading data from : %s\n',data_file)))
+  keys=tryCatch(read.delim(keys_file, sep="\t", header=F, stringsAsFactors=FALSE), error = function(e) cat(sprintf('\tERROR reading keys from : %s\n\t  Please make sure full root path to file is used in yaml file.\n',keys_file)) )
+  df=tryCatch(read.delim(data_file, sep="\t", header=T, stringsAsFactors=FALSE), error = function(e) cat(sprintf('\tERROR reading data from : %s\n\t  Please make sure full root path to file is used in yaml file.\n',data_file)))
 	preprocess.checkNames(df, id_colname, prey_colname, pepcount_colname, mw_colname) 
 	
   names(keys) = c(id_colname, "BAIT")
