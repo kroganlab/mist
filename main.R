@@ -62,14 +62,22 @@ getConfig <- function(config_file){
   return(config)
 }
 
-main <- function(opt){
-  config = tryCatch(getConfig(opt$config), error = function(e) { print("!!! Error loading the config file. Please make sure the file follows YAML format."); break} )
-  
+# chec out YAML config file and make sure it's setup properly
+formatConfig = function(config){
   # replace any spaces in the colname with a "." to match how R reads in headers with spaces. 
   config$preprocess$ip_colname <- gsub(' ','.',config$preprocess$ip_colname)
   config$preprocess$prey_colname <- gsub(' ','.',config$preprocess$prey_colname)
   config$preprocess$pepcount_colname <- gsub(' ','.',config$preprocess$pepcount_colname)
   config$preprocess$mw_colname <- gsub(' ','.',config$preprocess$mw_colname)
+  
+  return(config)
+}
+
+
+main <- function(opt){
+  config = tryCatch(getConfig(opt$config), error = function(e) { print("!!! Error loading the config file. Please make sure the file follows YAML format."); break} )
+  # check configuration of config file
+  config = formatConfig(config)
   
   ##  create an outputdir if it doesn't exist 
   if(is.null(config$files$output_dir) || config$files$output_dir == '') config$files$output_dir = sprintf('%s/processed/',getwd())
