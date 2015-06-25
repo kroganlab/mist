@@ -1,4 +1,6 @@
 #! /usr/bin/Rscript --vanilla
+
+cat(">> LOADING DEPENDENCIES...\n")
 suppressMessages(library(getopt))
 suppressMessages(library(yaml))
 
@@ -24,17 +26,13 @@ PIPELINE=T
 
 # set source directory
 args <- commandArgs(trailingOnly = F) 
-scriptPath <- normalizePath(dirname(sub("^--file=", "", args[grep("^--file=", args)])))
+scriptPath <- normalizePath(dirname(sub("^--file=", "", args[grep("^--file=", args)])))  # get the path to where main.R is located
 
 ## load all externeal files
 source(paste(scriptPath,"/src/preprocess.R",sep=""))
 source(paste(scriptPath,"/src/qc.R",sep=""))
 source(paste(scriptPath,"/src/mist.R",sep=""))
 source(paste(scriptPath,'/src/training.R',sep=""))
-
-# check for all packages reqiured
-required_libraries = c('yaml','getopt','optparse','reshape2','compiler','stats','grDevices','graphics','pheatmap','RColorBrewer','ggplot2','gridExtra','MESS')
-checkForLibraries(required_libraries)
 
 # check if libraries are installed
 checkForLibraries <- function(required_libraries){
@@ -45,10 +43,13 @@ checkForLibraries <- function(required_libraries){
     stop( paste("The following packages need to be installed on your computer in order to run MIST:\n"), paste('\t',missing_packages,'\n', sep=""), call.=FALSE ) 
     
   }else{
-    cat("All required R libraries accounted for.\n")
+    cat(">> All required R libraries accounted for.\n")
   }
 }
 
+# check for all packages reqiured
+required_libraries = c('yaml','getopt','optparse','reshape2','compiler','stats','grDevices','graphics','pheatmap','RColorBrewer','ggplot2','gridExtra','MESS')
+checkForLibraries(required_libraries)
 
 
 getConfig <- function(config_file){
