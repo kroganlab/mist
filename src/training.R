@@ -1,9 +1,9 @@
 #! /usr/bin/Rscript --vanilla --default-packages=utils
 
-library(pheatmap)
-library(reshape2)
-library(ggplot2)
-library(MESS)
+suppressMessages(library(pheatmap))
+suppressMessages(library(reshape2))
+suppressMessages(library(ggplot2))
+suppressMessages(library(MESS))
 
 #######################################
 
