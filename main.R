@@ -51,14 +51,21 @@ checkForLibraries <- function(required_libraries){
 required_libraries = c('yaml','getopt','optparse','reshape2','compiler','stats','grDevices','graphics','pheatmap','RColorBrewer','ggplot2','gridExtra','MESS')
 checkForLibraries(required_libraries)
 
-
+# some qc to make sure config file exists and is well formatted
 getConfig <- function(config_file){
+  if( !file.exists( config_file )){
+    stop( cat(paste("ERROR!!! The yml configuration file:\n\t",paste(getwd(),config_file,sep='/'), '\ndoes not exist. Please enter a correct path/filename.\n', sep='')), call.=F)
+  }
+  
   x = readLines(config_file)
   x = x[x!=""]  #remove \n\n cases (blank Lines)
   x = gsub(':  ',': ', gsub(":", ': ',x) )   # make sure there is a space between ':' and any character
   x = gsub('\t', '  ', x)
   config = paste(x, collapse='\n')
-  config = yaml.load(config)
+  config = tryCatch(yaml.load(config), error = function(e) { print("!!! Error loading the config file. Please make sure the file follows YAML format."); stop()} )
+  
+  # check formatting of config file
+  config = formatConfig(config)
   return(config)
 }
 
@@ -75,13 +82,12 @@ formatConfig = function(config){
 
 
 main <- function(opt){
-  config = tryCatch(getConfig(opt$config), error = function(e) { print("!!! Error loading the config file. Please make sure the file follows YAML format."); break} )
-  # check configuration of config file
-  config = formatConfig(config)
+  # read and qc config file
+  config = getConfig(opt$config)
   
   ##  create an outputdir if it doesn't exist 
   if(is.null(config$files$output_dir) || config$files$output_dir == '') config$files$output_dir = sprintf('%s/processed/',getwd())
-    
+  
   dir.create(config$files$output_dir, showWarnings = T)
   
   ## main switches between parts of the pipeline
@@ -105,7 +111,7 @@ main <- function(opt){
     output_file = gsub('.txt', "_MIST.txt", matrix_file)
     write.table(mist.results, output_file, row.names=FALSE, col.names=TRUE, quote=FALSE, sep="\t")
   }
-
+  
   cat(">> SCORING FINISHED!\n")
 }
 
