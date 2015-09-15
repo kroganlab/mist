@@ -95,22 +95,26 @@ preprocess.createMatrix <- function(y, collapse_file, exclusions_file, remove_fi
   names(y)[grep(paste("^",mw_colname,"$",sep=""), names(y))] = "mw_colname"
   
   # collapse bait names from "collapse" file
-  if(file.info(collapse_file)$size >0){
+  if( (file.info(collapse_file)$size >0) & (file.exists(collapse_file)) & (!file.info(collapse_file)$isdir) ){
     collapse <- read.delim(collapse_file, sep="\t", header=F, stringsAsFactors=FALSE)
     for( i in 1:dim(collapse)[1] ){
       y$BAIT[y$BAIT == collapse[i,1]] = collapse[i,2]
     }
+  }else if( !(file.exists(collapse_file)) | (file.info(collapse_file)$isdir)){
+    cat("\tCOLLAPSE FILE DOES NOT EXIST. NOT USING COLLAPSE FEATURE.\n")
   }else{
     cat("\tCOLLAPSE FILE IS EMPTY\n")
   }
   
   # remove the "remove" ip's
-  if(file.info(remove_file)$size>0){
+  if( (file.info(remove_file)$size >0) & (file.exists(remove_file)) & (!file.info(remove_file)$isdir) ){
     removals <- read.delim(remove_file, sep="\t", header=F, stringsAsFactors=FALSE)
     y.len = dim(y)[1]
     y <- y[!y$id %in% removals[,1],]
     if(dim(removals)[1]>0 & y.len == dim(y)[1])
       cat("\tWARNING: REMOVE > 0 BUT NO ENTRIES REMOVED\n")
+  }else if( !(file.exists(remove_file)) | (file.info(remove_file)$isdir) ){
+    cat("\tREMOVE FILE DOES NOT EXIST. NOT USING REMOVE FEATURE.\n")
   }else{
     cat("\tRemove file is empty\n")
   }
