@@ -59,7 +59,7 @@ qc.ipDists = function(data_matrix, ip_baits, baseName){
   theme_set(theme_bw(base_size = 12,base_family='Helvetica')) 
   #pdf(gsub('.txt','_proteincounts.pdf',baseName), width=10, height=(ceiling(length(unique(data_long$bait))/20)*8) )
   #pdf(gsub('.txt','_proteincounts.pdf',baseName), width=10, height=(ceiling(length(unique(data_long$bait))/20)*8))   
-  p = ggplot(data_long, aes(x=ip)) + geom_bar(stat='bin') + facet_wrap(facets= ~bait, scales='free_x', ncol=10) + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  p = ggplot(data_long, aes(x=ip)) + geom_bar() + facet_wrap(facets= ~bait, scales='free_x', ncol=10) + theme(axis.text.x = element_text(angle = 45, hjust = 1))
   #dev.off()
   ggsave(filename=gsub('.txt','_proteincounts.pdf',baseName), plot=p, scale=length(unique(data_long$bait))/10, limitsize=FALSE)
   
