@@ -95,28 +95,36 @@ preprocess.createMatrix <- function(y, collapse_file, exclusions_file, remove_fi
   names(y)[grep(paste("^",mw_colname,"$",sep=""), names(y))] = "mw_colname"
   
   # collapse bait names from "collapse" file
-  if( (file.info(collapse_file)$size >0) & (file.exists(collapse_file)) & (!file.info(collapse_file)$isdir) ){
-    collapse <- read.delim(collapse_file, sep="\t", header=F, stringsAsFactors=FALSE)
-    for( i in 1:dim(collapse)[1] ){
-      y$BAIT[y$BAIT == collapse[i,1]] = collapse[i,2]
+  if(!is.null(collapse_file)){
+    if( (file.info(collapse_file)$size >0) & (file.exists(collapse_file)) & (!file.info(collapse_file)$isdir) ){
+      collapse <- read.delim(collapse_file, sep="\t", header=F, stringsAsFactors=FALSE)
+      for( i in 1:dim(collapse)[1] ){
+        y$BAIT[y$BAIT == collapse[i,1]] = collapse[i,2]
+      }
+    }else if( !(file.exists(collapse_file)) | (file.info(collapse_file)$isdir)){
+      cat("\tCOLLAPSE FILE DOES NOT EXIST. NOT USING COLLAPSE FEATURE.\n")
+    }else{
+      cat("\tCOLLAPSE FILE IS EMPTY\n")
     }
-  }else if( !(file.exists(collapse_file)) | (file.info(collapse_file)$isdir)){
-    cat("\tCOLLAPSE FILE DOES NOT EXIST. NOT USING COLLAPSE FEATURE.\n")
   }else{
-    cat("\tCOLLAPSE FILE IS EMPTY\n")
+    cat("\tCOLLAPSE FILE DOES NOT EXIST. NOT USING COLLAPSE FEATURE.\n")
   }
   
   # remove the "remove" ip's
-  if( (file.info(remove_file)$size >0) & (file.exists(remove_file)) & (!file.info(remove_file)$isdir) ){
-    removals <- read.delim(remove_file, sep="\t", header=F, stringsAsFactors=FALSE)
-    y.len = dim(y)[1]
-    y <- y[!y$id %in% removals[,1],]
-    if(dim(removals)[1]>0 & y.len == dim(y)[1])
-      cat("\tWARNING: REMOVE > 0 BUT NO ENTRIES REMOVED\n")
-  }else if( !(file.exists(remove_file)) | (file.info(remove_file)$isdir) ){
-    cat("\tREMOVE FILE DOES NOT EXIST. NOT USING REMOVE FEATURE.\n")
+  if(!is.null(remove_file)){
+    if( (file.info(remove_file)$size >0) & (file.exists(remove_file)) & (!file.info(remove_file)$isdir) ){
+      removals <- read.delim(remove_file, sep="\t", header=F, stringsAsFactors=FALSE)
+      y.len = dim(y)[1]
+      y <- y[!y$id %in% removals[,1],]
+      if(dim(removals)[1]>0 & y.len == dim(y)[1])
+        cat("\tWARNING: REMOVE > 0 BUT NO ENTRIES REMOVED\n")
+    }else if( !(file.exists(remove_file)) | (file.info(remove_file)$isdir) ){
+      cat("\tREMOVE FILE DOES NOT EXIST. NOT USING REMOVE FEATURE.\n")
+    }else{
+      cat("\tRemove file is empty\n")
+    }
   }else{
-    cat("\tRemove file is empty\n")
+    cat("\tREMOVE FILE DOES NOT EXIST. NOT USING REMOVE FEATURE.\n")
   }
   
   # Create matrix using either "number of unique peptides" or "spectral count"
@@ -148,27 +156,34 @@ preprocess.createMatrix <- function(y, collapse_file, exclusions_file, remove_fi
   datmat <- datmat[,c(3,1,4,2,5:dim(datmat)[2])]
   
   # handle exclusions
-  if(file.info(exclusions_file)$size>0){
-    exclusions <- unique(read.delim(exclusions_file, sep="\t", header=F, stringsAsFactors=FALSE))
-    
-    # if multiple instances of bait in col1, combine all of the col2 exclusions
-    if( any(duplicated(exclusions[,1])) ){
-      idx<-which(duplicated(exclusions[,1]))
-      for(i in unique(exclusions[idx,1])){
-        idx2 = which(exclusions[,1]==i)
-        exclusions[idx2,2] = paste(exclusions[idx2,2], collapse="|")
+  if(!is.null(exclusions_file)){
+    if(file.info(exclusions_file)$size>0){
+      exclusions <- unique(read.delim(exclusions_file, sep="\t", header=F, stringsAsFactors=FALSE))
+      
+      # if multiple instances of bait in col1, combine all of the col2 exclusions
+      if( any(duplicated(exclusions[,1])) ){
+        idx<-which(duplicated(exclusions[,1]))
+        for(i in unique(exclusions[idx,1])){
+          idx2 = which(exclusions[,1]==i)
+          exclusions[idx2,2] = paste(exclusions[idx2,2], collapse="|")
+        }
+        exclusions = unique(exclusions)
       }
-      exclusions = unique(exclusions)
+      
+      ips <-unique(y[,c('id_colname','BAIT')])
+      ips <- merge(ips, exclusions, by.x="BAIT", by.y="V1", all.x=TRUE)[, c(2,1,3)]
+      ips <- ips[order(ips$id_colname, ips$BAIT),]
+      names(ips)[3] = "PreyType/BaitCov"
+      idx <- which(is.na(ips[,3]))
+      ips[idx,3] = ips[idx,2]
+    }else{
+      cat("\tEXCLUSIONS FILE IS EMPTY\n")
+      ips <-unique(y[,c('id_colname','BAIT')])
+      ips <- ips[order(ips$id_colname),]
+      ips$"PreyType/BaitCov" = ips$BAIT
     }
-    
-    ips <-unique(y[,c('id_colname','BAIT')])
-    ips <- merge(ips, exclusions, by.x="BAIT", by.y="V1", all.x=TRUE)[, c(2,1,3)]
-    ips <- ips[order(ips$id_colname, ips$BAIT),]
-    names(ips)[3] = "PreyType/BaitCov"
-    idx <- which(is.na(ips[,3]))
-    ips[idx,3] = ips[idx,2]
   }else{
-    cat("\tExclusions file is empty\n")
+    cat("\tEXCLUTIONS FILE DOES NOT EXIST. NOT USING EXCLUSIONS FEATURE.\n")
     ips <-unique(y[,c('id_colname','BAIT')])
     ips <- ips[order(ips$id_colname),]
     ips$"PreyType/BaitCov" = ips$BAIT
