@@ -33,4 +33,4 @@ mist:
   # Specificity18 transforms computed specificity to the expected specificity as if 18 other baits were in the study
   # Any integer > 1 indicates both TRUE and the number of other baits to use instead of default of 18.
   # Note even when set to FALSE, Specificity18 is calculated and reported but not used in MIST score.
-  standardize_specificity : FALSE
+  standardize_specificity : 18

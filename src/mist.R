@@ -231,7 +231,8 @@ mist.main <- function(matrix_file, weights='fixed', w_R=0.30853, w_A=0.00596, w_
   # switch specificity based on standardize_specificity argument
   # clean up the argument
   if (is.null(standardize_specificity)){
-    standardize_specificity <- FALSE
+    message ("New in V1.5: Specificity is now automatically scaled to dataset size by default. If you need consistency with previous versions, set standardize_specificity to FALSE in yml config file.")
+    standardize_specificity <- 18L
   } else { 
     if (is.numeric(standardize_specificity)){
       if (standardize_specificity < 2){
