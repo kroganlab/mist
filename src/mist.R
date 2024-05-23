@@ -28,7 +28,7 @@ mist.getM3D_normalized <- function(x){
 }
 
 # calculate Abundance, Reproducibility, and Specificity
-mist.getMetrics <- function(x, info){
+mist.getMetrics <- function(x, info, standardize_specificity = NULL){
 	reproducibility <- c()
 	abundance <- c()
 	
@@ -75,15 +75,34 @@ mist.getMetrics <- function(x, info){
 	
 	# Specificity
 	# ----------------------
-  # Must account for specificity exclusions
-	specificity <- mist.getSpecificity(abundance, info)
-	#specificity <- t(apply(abundance,1,function(z) z/sum(z)))
-	return(list(reproducibility, abundance, specificity))
+	# specificity <- t(apply(abundance,1,function(z) z/sum(z)))
+	# Must account for specificity exclusions
+	sc.list <- mist.getSpecificity(abundance, info, returnCounts = TRUE)
+	specificity <- sc.list$specificity
+	
+	## transform specificity to FCvsBG using number of other baits
+	fcVsBg <- mist.specificity2FC(specificity, sc.list$otherBaitCounts)
+	
+	## transform fc to a standard specificity. 18 other baits is count from original HIV study, and is default we calculate even if it won't be used
+	if (is.null(standardize_specificity) || !is.integer(standardize_specificity) || standardize_specificity < 2){
+	  standardize_specificity = 18
+	}
+	standardized_specificity <- mist.FC2Specificity(fcVsBg, otherBaitCount = standardize_specificity)	
+	
+  result <- list(Reproducibility = reproducibility, 
+                 Abundance = abundance,
+                 Specificity = specificity,
+                 FcVsBg = fcVsBg)
+  # special name for standardized specificity
+  result[[sprintf("Specificity%d", standardize_specificity)]] <- standardized_specificity
+	return(result)
 }
 
 # calculate specificity taking the exclusions into account
-mist.getSpecificity <- function(abundance, info){
+mist.getSpecificity <- function(abundance, info, returnCounts = FALSE){
   specificity <- abundance
+  otherBaitCounts <- integer(ncol(abundance))
+  names(otherBaitCounts) <- colnames(abundance)
   
   for( i in 1:dim(abundance)[2]){
     bait <- colnames(abundance)[i]
@@ -91,6 +110,8 @@ mist.getSpecificity <- function(abundance, info){
     baits_to_exclude = unique(info[info$Bait==bait, 'Specificity_exclusion'])
     baits_to_exclude = setdiff(baits_to_exclude,bait)
     baits_to_include = setdiff(colnames(abundance),baits_to_exclude)
+    
+    otherBaitCounts[i] <- length(baits_to_include)-1 # don't count bait_i
     
     if(length(baits_to_include)==1){
       specificity[,i] <- 1
@@ -103,10 +124,40 @@ mist.getSpecificity <- function(abundance, info){
     }
     ## remove NA's from dividing by 0
     specificity[is.na(specificity[,i]),i] <- 0
-    ## if specificity == Inf it means all other rows were 0, so set to 1 (max.value)  
   }
-  return(specificity)
+  if (returnCounts){
+    return (list(specificity = specificity, otherBaitCounts = otherBaitCounts))
+  } else{
+    return(specificity)
+  }
 }
+
+# given matrix of specificity and number of other baits used in calculation, transform to a fold change vs average other
+mist.specificity2FC <- function(specificity.mat, otherBaitCounts){
+  # Calculation is (N-1) * S/(1-S), see notes
+  # Here I use n instead of N-1 because its already been subtracted
+  # otherBaitCounts = N-1, and n = N-1 below
+  .fc <- function(s, n){
+    n * s/(1-s)
+  }
+
+  # calculate per column
+  sweep (specificity.mat, 2, otherBaitCounts, .fc)
+}
+
+# given matrix of fold changes vs background, and number of other baits desired, transform to a specificity
+mist.FC2Specificity <- function (foldChange.mat, otherBaitCount = 18){
+  # To explain...
+  # Set average in other baits O_hat = 1, then abundance in B_i is same as FC. 'cause FC = B_i/O_hat
+  # By definition of specificity, S = B/(B + sum_others) = B/(B + 1*otherBaitCount) =  FC/(FC + n)
+  fc.mat <- foldChange.mat/(foldChange.mat + otherBaitCount)
+  
+  # Inf/(Inf + n) produces NA instead of 1
+  fc.mat[foldChange.mat == Inf] <- 1
+  
+  return (fc.mat)
+}
+
 
 # vectorize the metrics while keeping the names straight
 mist.vectorize <- function(x){
@@ -142,36 +193,86 @@ mist.getSampleOccurences = function(m3d_norm, info){
 #scores <- cbind(scores, mist_hiv=scores$Repro*0.30853 + scores$Abundance*0.00596 + scores$Specificity*0.68551 )
 ##############################################################################################################
 
-mist.main <- function(matrix_file, weights='fixed', w_R=0.30853, w_A=0.00596, w_S=0.68551, training_file, training_steps=0.1){
+mist.main <- function(matrix_file, weights='fixed', w_R=0.30853, w_A=0.00596, w_S=0.68551, training_file, training_steps=0.1, standardize_specificity = NULL){
   dat <- read.delim(matrix_file, sep="\t", header=TRUE, stringsAsFactors=FALSE)
   dat <- mist.processMatrix(dat)
   m3d_norm <- mist.getM3D_normalized(dat[[1]])
   info = dat[[2]]
 
-  dat <- mist.getMetrics(m3d_norm, info)
-  R <- mist.vectorize(dat[[1]])
-  A <- mist.vectorize(dat[[2]])
-  S <- mist.vectorize(dat[[3]])
+  dat <- mist.getMetrics(m3d_norm, info, standardize_specificity = standardize_specificity)
+  dat.vct <- lapply (dat,mist.vectorize )
+
+
+  # old metrics...order may matter in some legacy code, so preserve
+  R <- dat.vct$Reproducibility #mist.vectorize(dat[[1]])
+  A <- dat.vct$Abundance #mist.vectorize(dat[[2]])
+  S <- dat.vct$Specificity #mist.vectorize(dat[[3]])
+  metrics = data.frame(Bait=A$Bait,Prey=A$Prey,Abundance=A$Xscore,
+                       Reproducibility=R$Xscore,
+                       Specificity=S$Xscore)
   
-  metrics = data.frame(Bait=A$Bait,Prey=A$Prey,Abundance=A$Xscore,Reproducibility=R$Xscore,Specificity=S$Xscore)
+  # new metrics, order shouldn't matter, so use whatever order mist.getMetrics delivers
+  # first delete the old ones
+  for (name in c("Reproducibility", "Abundance", "Specificity"))
+    dat.vct[[name]] <- NULL
+  # make a table of every score available.
+  newMetrics <-   data.frame(lapply(dat.vct, function(x)x$Xscore) )
+  
+  # combined old with new
+  metrics <- cbind (metrics, newMetrics)
+  
   ## only retain non-zero results
   metrics = metrics[metrics$Abundance>0,]
   ## for debug purposes
 #   output_file <- gsub('.txt', "_MIST_METRICS.txt", matrix_file)
 #   write.table(metrics, output_file, row.names=FALSE, col.names=TRUE, quote=FALSE, sep="\t" )
   
+  
+  # switch specificity based on standardize_specificity argument
+  # clean up the argument
+  if (is.null(standardize_specificity)){
+    standardize_specificity <- FALSE
+  } else { 
+    if (is.numeric(standardize_specificity)){
+      if (standardize_specificity < 2){
+        standardize_specificity <- as.logical(standardize_specificity)
+      } else{
+        standardize_specificity <- as.integer(standardize_specificity)
+      }
+    }
+    if(TRUE == standardize_specificity)
+      standardize_specificity <- 18L
+    if (! (is.logical(standardize_specificity) | is.integer(standardize_specificity))){
+      message("Unexpected value for standardize_specificity: ", standardize_specificity, " It should be TRUE/FALSE or an integer. Setting to FALSE")
+      standardize_specificity <- FALSE
+    }
+  }
+  
+  if(standardize_specificity){
+    .S <- metrics[[sprintf("Specificity%d", standardize_specificity)]]
+    .metrics <- data.frame(Bait = metrics$Bait,
+                           Prey = metrics$Prey,
+                           Abundance = metrics$Abundance,
+                           Reproducibility = metrics$Reproducibility,
+                           Specificity = .S)    
+  } else{
+    .S <- metrics$Specificity
+    .metrics <- metrics
+  }
+  
+  
   if(weights == 'fixed'){
-    mist_scores = metrics$Reproducibility*w_R + metrics$Abundance*w_A + metrics$Specificity*w_S
+    mist_scores = metrics$Reproducibility*w_R + metrics$Abundance*w_A + .S*w_S
     results = data.frame(metrics, MIST=mist_scores)  
   }else if(weights == 'PCA'){
-    results <- mist.doPCA(R,A,S)
+    results <- mist.doPCA(R,A,.S)
   }else if(weights == 'training'){
     training_set = read.delim(training_file, header=F, stringsAsFactors=F)
     colnames(training_set) = c('Bait','Prey')
     output_file <- paste(dirname(matrix_file), "prediction_rates.txt", sep="/")
-    training_weights = mist.train.main(metrics, training_set, output_file, training_steps)
+    training_weights = mist.train.main(.metrics, training_set, output_file, training_steps)
     cat(sprintf("\tWEIGHTS BASED ON TRAINING SET:\n\t  REPRODUCIBILITY: %s\n\t  ABUNDANCE: %s\n\t  SPECIFICITY: %s\n",training_weights$R, training_weights$A, training_weights$S))
-    mist_scores = metrics$Reproducibility*training_weights$R + metrics$Abundance*training_weights$A + metrics$Specificity*training_weights$S
+    mist_scores = metrics$Reproducibility*training_weights$R + metrics$Abundance*training_weights$A + .S*training_weights$S
     results = data.frame(metrics, MIST=mist_scores)  
   }else{
     print(sprintf('unrecognized MIST option: %s',weights))
