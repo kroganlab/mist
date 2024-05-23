@@ -1,17 +1,20 @@
-MIST
+# MIST
 ----
 
-# New in Version 1.5
+## New in Version 1.5
 
-MiST now automatically scales the specificity score to dataset size (number of independent baits). See `docs/ScalingSpecificity.pdf` for a discussion of this change. This means MiST thresholds and weights should be closer to those used in the original study, but also scores are sensitive to MiST version. *Don't change versions mid-study!*
+MiST now automatically uses the scaled  specificity score (specificity18, by default) in the combined MiST score. See `docs/ScalingSpecificity.pdf` for a discussion of this change. This means MiST thresholds and weights should be closer to those used in the original study, but also scores will be sensitive to MiST version. *Don't change versions mid-study without changing your yml file!*
 
-To disable this specificity score scaling, change your config yml file to include:
+You can disable the use of specificity score scaling in the combined MiST score by changing your config yml file to include:
 
 ```
   standardize_specificity : FALSE
 ```
 
-See `tests/small/mist_small_test.yml` for example config yml file.
+See `tests/small/mist_small_test.yml` for an example config yml file. 
+
+We do not recommend disabling this in general, but it can be useful for consistency with previous versions.  Regardless of the setting, the output will include columns for both the scaled and unscaled specificity; this setting changes which specificity score will be used in MiST score.
+
 
 # 1. Necessary Resources
 
