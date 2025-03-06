@@ -156,8 +156,9 @@ preprocess.createMatrix <- function(y, collapse_file, exclusions_file, remove_fi
   datmat <- datmat[,c(3,1,4,2,5:dim(datmat)[2])]
   
   # handle exclusions
-  if(file.info(exclusions_file)$size>0 & (file.exists(exclusions_file))){
-    exclusions <- unique(read.delim(exclusions_file, sep="\t", header=F, stringsAsFactors=FALSE))
+  if(file.exists(exclusions_file)){
+    if(file.info(exclusions_file)$size>0){
+      exclusions <- unique(read.delim(exclusions_file, sep="\t", header=F, stringsAsFactors=FALSE))
       
       # if multiple instances of bait in col1, combine all of the col2 exclusions
       if( any(duplicated(exclusions[,1])) ){
