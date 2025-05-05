@@ -59,7 +59,8 @@ getConfig <- function(config_file){
   
   x = readLines(config_file)
   x = x[x!=""]  #remove \n\n cases (blank Lines)
-  x = gsub(':  ',': ', gsub(":", ': ',x) )   # make sure there is a space between ':' and any character
+  # x = gsub(':  ',': ', gsub(":", ': ',x) )   # make sure there is a space between ':' and any character
+  x = sub(":", ": ", x) # make sure there is a space between ':' and any character
   x = gsub('\t', '  ', x)
   config = paste(x, collapse='\n')
   config = tryCatch(yaml.load(config), error = function(e) { print("!!! Error loading the config file. Please make sure the file follows YAML format."); stop()} )
